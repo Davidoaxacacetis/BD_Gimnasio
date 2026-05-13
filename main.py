@@ -47,12 +47,14 @@ class GestorGimnasio:
     def obtener_todos_los_miembros(self):
         return list(self.usuarios_gym.find())
 
-    # Lógica de Acceso al Sistema
     def crear_usuario(self, nombre, email, contraseña):
         try:
             return self.usuarios_app.insert_one({
-                "nombre": nombre, "email": email, "password": contraseña
-            }).inserted_id
+            "nombre": nombre, 
+            "email": email, 
+            "password": contraseña,
+            "fecha_registro": datetime.now()
+        }).inserted_id
         except DuplicateKeyError:
             return None
 
