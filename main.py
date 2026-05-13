@@ -10,9 +10,8 @@ class GestorGimnasio:
             self.client = MongoClient(uri)
             self.db = self.client['Gimnasio']
             
-            # Colecciones según el documento
-            self.usuarios_gym = self.db['Usuarios']       # Los miembros
-            self.usuarios_app = self.db['usuarios_sistema'] # Tú (admin)
+            self.usuarios_gym = self.db['Usuarios']       
+            self.usuarios_app = self.db['usuarios_sistema'] 
             self.membresias = self.db['Membresias']
             self.trabajadores = self.db['Trabajadores']
             self.entrenadores = self.db['Entrenadores']
@@ -67,3 +66,10 @@ class GestorGimnasio:
     def actualizar_usuario(self, uid, datos):
         res = self.usuarios_app.update_one({"_id": ObjectId(uid)}, {"$set": datos})
         return res.modified_count > 0
+    
+    
+    def cerrar_conexion(self):
+        """Cerrar conexión a MongoDB"""
+        if self.client:
+            self.client.close()
+            print("🔌 Conexión cerrada")
