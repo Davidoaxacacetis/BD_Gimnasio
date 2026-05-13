@@ -6,96 +6,12 @@ app = Flask(__name__)
 app.secret_key = 'Ruby'
 gestor = GestorGimnasio()
 
-
-@app.route('/registro', methods=['GET', 'POST'])
-def registro():
-    if request.method == 'POST':
-        nombre = request.form.get('nombre')
-        email = request.form.get('email')
-        contraseña = request.form.get("contraseña")
-        confirmarcontra = request.form.get("confirmarcontra")
-
-        if contraseña != confirmarcontra:
-            flash("Las contraseñas no coinciden", "danger")
-            return render_template("registro.html")
-
-        usuario_id = gestor.crear_usuario(nombre, email, contraseña)
-        if usuario_id:
-            flash('Registro exitoso. Por favor, inicia sesión.', 'success')
-            return redirect(url_for('login'))
-        else:
-            flash('El correo ya está registrado o hubo un error.', 'danger')
-            
-    return render_template('registro.html')
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        email = request.form.get('email')
-        contraseña = request.form.get('contraseña')
-        usuario = gestor.validar_credenciales(email, contraseña)
-
-        if usuario:
-            session['logueado'] = True
-            session['usuario_id'] = usuario['_id']
-            session['nombre'] = usuario['nombre']
-            flash(f"¡Bienvenido de nuevo, {usuario['nombre']}!", "success")
-            return redirect(url_for('dashboard'))
-        else:
-            flash("Correo o contraseña incorrectos", "danger")
-            
-    return render_template('login.html')
-
-@app.route('/recuperar_password', methods=['GET', 'POST'])
-def recuperar_password():
-    return render_template('recuperar.html')
-
-
-@app.route('/editar_usuario', methods=['GET', 'POST'])
-def editar_usuario():
-    if 'usuario_id' not in session:
-        return redirect(url_for('login'))
-
-    usuario_id = session['usuario_id']
-    
-    if request.method == 'POST':
-        datos_nuevos = {
-            'nombre': request.form.get('nombre'),
-            'email': request.form.get('email')
-        }
-        
-        datos_nuevos = {k: v for k, v in datos_nuevos.items() if v}
-
-        if gestor.actualizar_usuario(usuario_id, datos_nuevos):
-            if 'nombre' in datos_nuevos: session['nombre'] = datos_nuevos['nombre']
-            if 'email' in datos_nuevos: session['email'] = datos_nuevos['email']
-            
-            flash('Perfil actualizado correctamente', 'success')
-            return redirect(url_for('dashboard'))
-        else:
-            flash('No se realizaron cambios o el email ya existe', 'warning')
-
-    usuario = gestor.obtener_usuario(usuario_id)
-    return render_template('editar.html', usuario=usuario)
-
-@app.route('/logout')
-def logout():
-    session.clear() 
-    flash("Has cerrado sesión correctamente", "info")
-    return redirect(url_for('login'))
-
-@app.route('/perfil')
-def perfil():
-    if 'usuario_id' not in session:
-        return redirect(url_for('login'))
-    usuario = gestor.obtener_usuario(session['usuario_id'])
-    return render_template('perfil.html', usuario=usuario)
-
 @app.route('/')
 def dashboard():
     if 'usuario_id' not in session:
         return redirect(url_for('login'))
     
+    # Ahora obtenemos miembros del gimnasio, no tareas
     miembros = gestor.obtener_todos_los_miembros()
     return render_template('dashboard.html', 
                             nombre=session['nombre'], 
@@ -117,6 +33,31 @@ def comprar_membresia():
         flash("Error al registrar.", "danger")
     return redirect(url_for('dashboard'))
 
+@app.route('/registro', methods=['GET', 'POST'])
+def registro():
+    if request.method == 'POST':
+        if request.form.get("contraseña") != request.form.get("confirmarcontra"):
+            flash("Contraseñas no coinciden", "danger")
+            return render_template("registro.html")
+        if gestor.crear_usuario(request.form.get('nombre'), request.form.get('email'), request.form.get('contraseña')):
+            flash('Registro exitoso.', 'success')
+            return redirect(url_for('login'))
+    return render_template('registro.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        user = gestor.validar_credenciales(request.form.get('email'), request.form.get('contraseña'))
+        if user:
+            session.update({'logueado': True, 'usuario_id': str(user['_id']), 'nombre': user['nombre']})
+            return redirect(url_for('dashboard'))
+        flash("Credenciales incorrectas", "danger")
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
 
 if __name__ == '__main__':
     app.run(debug=True)
