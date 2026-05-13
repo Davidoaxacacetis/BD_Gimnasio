@@ -91,9 +91,18 @@ def perfil():
     usuario = gestor.obtener_usuario(session['usuario_id'])
     return render_template('perfil.html', usuario=usuario)
 
+@app.route('/')
+def dashboard():
+    if 'usuario_id' not in session:
+        return redirect(url_for('login'))
+    
+    miembros = gestor.obtener_todos_los_miembros()
+    return render_template('dashboard.html', 
+                            nombre=session['nombre'], 
+                            miembros=miembros)
+
 @app.route('/comprar_membresia', methods=['POST'])
 def comprar_membresia():
-    """Ruta para agregar una membresía a un miembro del gimnasio."""
     if 'usuario_id' not in session:
         return redirect(url_for('login'))
 
@@ -103,29 +112,10 @@ def comprar_membresia():
     pago = request.form.get('pago')
 
     if gestor.registrar_membresia_cliente(nombre, telefono, tipo, pago):
-        flash(f"Membresía de {nombre} registrada correctamente.", "success")
+        flash(f"Membresía de {nombre} registrada.", "success")
     else:
-        flash("Error al registrar la membresía.", "danger")
-    
+        flash("Error al registrar.", "danger")
     return redirect(url_for('dashboard'))
-
-@app.route('/')
-def dashboard():
-    if 'usuario_id' not in session:
-        flash('Por favor, inicia sesión para acceder.', 'warning')
-        return redirect(url_for('login'))
-    
-    todas = gestor.obtener_tareas_usuario(session['usuario_id'])
-    
-    pendientes = [t for t in todas if t['estado'] in ['pendiente', 'en_progreso']]
-    completadas = [t for t in todas if t['estado'] == 'completada']
-    canceladas = [t for t in todas if t['estado'] == 'cancelada']
-    
-    return render_template('dashboard.html', 
-                            nombre=session['nombre'], 
-                            pendientes=pendientes, 
-                            completadas=completadas,
-                            canceladas=canceladas)
 
 
 if __name__ == '__main__':
