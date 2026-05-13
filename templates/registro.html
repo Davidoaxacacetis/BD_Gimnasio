@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+
+    <div class="row justify-content-center">
+        <div class="card shadow-sm border-0 rounded-3 mt-5">
+            <div class="ard-body p-4">
+                <h3 class="card-title text-center mb-4 "> Crear cuenta</h3>
+            
+                <form method="POST" action="{{url_for('registro')}}">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre Completo</label>
+                        <input type="text" name="nombre" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Correo electronico</label>
+                        <input type="email" name="email" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Numero de Telefono</label>
+                        <input type="tel" name="telefono" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Fecha de nacimiento</label>
+                        <input type="date" name="fecha_nacimiento" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="contraseña" class="form-label">Contraseña</label>
+                        <input type="password" class="form-control rounded-pill" name="contraseña" id="contraseña"
+                            minlength="8" required placeholder="No la compartas">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="confirmarcontra" class="form-label">Confirmar contraseña</label>
+                        <input type="password" class="form-control rounded-pill" name="confirmarcontra"
+                            id="confirmarcontra" minlength="8" required placeholder="Confirma tu contraseña">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Registrame</button>
+                </form>
+                <div class="text-center mt-3">
+                    <small>ya tienes cuenta?<a href="{{url_for('login')}}">Inicia sesion</a></small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock content %}

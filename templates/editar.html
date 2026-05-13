@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 rounded-3 mt-5">
+            <div class="card-body p-4">
+                <h3 class="card-title text-center mb-4">Editar Usuario</h3>
+                <form action="{{url_for('editar_usuario')}}" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <input type="text" name="nombre" class="form-control" value="{{usuario.nombre}}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Correo electronico</label>
+                        <input type="email" name="email" class="form-control" value="{{usuario.email}}">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                    <a href="{{url_for('dashboard')}}" class="btn btn-secondary">Cancelar</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
