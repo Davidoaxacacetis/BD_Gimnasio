@@ -1,11 +1,27 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from main import GestorGimnasio
 from datetime import datetime
+from flask_mail import Mail, Message
+from itsdangerous import URLSafeTimedSerializer
+from werkzeug.security import generate_password_hash
 
 app = Flask(__name__)
-app.secret_key = 'Ruby'
+app.secret_key = 'Ruby' # Clave para sesiones y tokens
+
+# --- CONFIGURACIÓN DE CORREO ---
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'dtntakumi13@gmail.com'
+app.config['MAIL_PASSWORD'] = 'Ghostsoldier12*' 
+app.config['MAIL_DEFAULT_SENDER'] = 'dtntakumi13@gmail.com'
+
+# Inicialización de extensiones
+mail = Mail(app)
+serializer = URLSafeTimedSerializer(app.secret_key)
 gestor = GestorGimnasio()
 
+# --- RUTAS ---
 
 @app.route('/registro', methods=['GET', 'POST'])
 def registro():
@@ -19,9 +35,12 @@ def registro():
             flash("Las contraseñas no coinciden", "danger")
             return render_template("registro.html")
 
-        usuario_id = gestor.crear_usuario(nombre, email, contraseña)
+        pass_encriptada = generate_password_hash(contraseña)
+        
+        usuario_id = gestor.crear_usuario(nombre, email, pass_encriptada)
+
         if usuario_id:
-            usuario_id = str(usuario_id) 
+            flash("Registro exitoso. ¡Ya puedes iniciar sesión!", "success")
             return redirect(url_for('login'))
         else:
             flash('El correo ya está registrado o hubo un error.', 'danger')
@@ -48,8 +67,45 @@ def login():
 
 @app.route('/recuperar_password', methods=['GET', 'POST'])
 def recuperar_password():
-    return render_template('recuperar.html')
+    if request.method == 'POST':
+        email = request.form.get('email')
+        usuario = gestor.usuarios.find_one({"email": email}) 
+        
+        if usuario:
+            token = serializer.dumps(email, salt='recuperar-password')
+            enlace_recuperacion = url_for('restablecer_token', token=token, _external=True)
+            
+            msg = Message("Restablecer tu Contraseña - Gimnasio", recipients=[email])
+            msg.body = f"Hola {usuario['nombre']}, haz clic aquí para cambiar tu clave: {enlace_recuperacion}"
+            
+            try:
+                mail.send(msg)
+                return render_template('confirmacion_envio.html')
+            except Exception as e:
+                flash(f"Error al enviar el correo: {str(e)}", "danger")
+        
+        flash("Si el correo existe, se ha enviado un enlace.", "info")
+    return render_template('pedir_email.html')
 
+@app.route('/restablecer/<token>', methods=['GET', 'POST'])
+def restablecer_token(token):
+    try:
+        email = serializer.loads(token, salt='recuperar-password', max_age=1800)
+    except:
+        flash("El enlace es inválido o ha expirado.", "danger")
+        return redirect(url_for('recuperar_password'))
+
+    if request.method == 'POST':
+        nueva_pass = request.form.get('contraseña')
+        pass_encriptada = generate_password_hash(nueva_pass)
+        
+        if gestor.actualizar_password(email, pass_encriptada):
+            flash("Contraseña actualizada correctamente.", "success")
+            return redirect(url_for('login'))
+        else:
+            flash("Error al actualizar la contraseña.", "danger")
+            
+    return render_template('nueva_password.html')
 
 @app.route('/editar_usuario', methods=['GET', 'POST'])
 def editar_usuario():
@@ -57,23 +113,19 @@ def editar_usuario():
         return redirect(url_for('login'))
 
     usuario_id = session['usuario_id']
-    
     if request.method == 'POST':
         datos_nuevos = {
             'nombre': request.form.get('nombre'),
             'email': request.form.get('email')
         }
-        
         datos_nuevos = {k: v for k, v in datos_nuevos.items() if v}
 
         if gestor.actualizar_usuario(usuario_id, datos_nuevos):
             if 'nombre' in datos_nuevos: session['nombre'] = datos_nuevos['nombre']
-            if 'email' in datos_nuevos: session['email'] = datos_nuevos['email']
-            
             flash('Perfil actualizado correctamente', 'success')
             return redirect(url_for('dashboard'))
         else:
-            flash('No se realizaron cambios o el email ya existe', 'warning')
+            flash('No se realizaron cambios.', 'warning')
 
     usuario = gestor.obtener_usuario(usuario_id)
     return render_template('editar.html', usuario=usuario)
@@ -116,7 +168,6 @@ def comprar_membresia():
     else:
         flash("Error al registrar.", "danger")
     return redirect(url_for('dashboard'))
-
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -14,7 +14,13 @@
                     </div>
                     <div class="mb-4">
                         <label class="form-label">Contraseña</label>
-                        <input type="password" name="contraseña" class="form-control" required>
+                        <input type="password" 
+                                name="contraseña" 
+                                class="form-control rounded-pill" 
+                                id="contraseña"
+                                required
+                                pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&]).{8,}"
+                                title="La contraseña debe tener al menos 8 caracteres, incluir una mayúscula, una minúscula, un número y un carácter especial (@$!%*?&)">
                     </div>
                     <button type="submit" class="btn btn-success w-100">Iniciar sesion</button>
                 </form>

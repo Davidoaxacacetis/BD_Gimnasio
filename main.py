@@ -2,10 +2,10 @@ from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError, ConnectionFailure
 from bson.objectid import ObjectId
 from datetime import datetime
-from typing import Optional, List, Dict
+from werkzeug.security import check_password_hash 
 
 class GestorGimnasio:
-    def __init__(self, uri: str = 'mongodb://localhost:27017/'):
+    def __init__(self, uri: str = 'mongodb+srv://dtntakumi13_db_user:Ghostsoldier12*@gimnasio.efxu3ej.mongodb.net/'):
         try:
             self.client = MongoClient(uri)
             self.db = self.client['Gimnasio']
@@ -24,10 +24,59 @@ class GestorGimnasio:
             raise
 
     def _crear_indices(self):
+        """Crea índices únicos para evitar correos o teléfonos duplicados"""
         self.usuarios_app.create_index("email", unique=True)
         self.usuarios_gym.create_index("telefono", unique=True)
 
-    # Lógica de Clientes y Membresías
+    @property
+    def usuarios(self):
+        """Permite acceder a usuarios_app desde app.py usando gestor.usuarios"""
+        return self.usuarios_app
+
+
+    def crear_usuario(self, nombre, email, contraseña_encriptada):
+        """Registra un nuevo usuario con la contraseña ya encriptada"""
+        try:
+            return self.usuarios_app.insert_one({
+                "nombre": nombre, 
+                "email": email, 
+                "password": contraseña_encriptada, 
+                "fecha_registro": datetime.now()
+            }).inserted_id
+        except DuplicateKeyError:
+            return None
+
+    def validar_credenciales(self, email, contraseña_plana):
+        """Valida si el correo existe y la contraseña coincide (usando hash)"""
+        usuario = self.usuarios_app.find_one({"email": email})
+        
+        if usuario:
+            if check_password_hash(usuario['password'], contraseña_plana):
+                return usuario
+        
+        return None
+
+    def actualizar_password(self, email, nueva_pass_encriptada):
+        """Actualiza la contraseña de un usuario (usada en recuperación)"""
+        try:
+            resultado = self.usuarios_app.update_one(
+                {"email": email}, 
+                {"$set": {"password": nueva_pass_encriptada}}
+            )
+            return resultado.modified_count > 0
+        except Exception as e:
+            print(f"Error al actualizar password: {e}")
+            return False
+
+
+    def obtener_usuario(self, uid):
+        return self.usuarios_app.find_one({"_id": ObjectId(uid)})
+
+    def actualizar_usuario(self, uid, datos):
+        res = self.usuarios_app.update_one({"_id": ObjectId(uid)}, {"$set": datos})
+        return res.modified_count > 0
+
+
     def registrar_membresia_cliente(self, nombre, telefono, tipo_membresia, pago):
         try:
             datos = {
@@ -46,28 +95,6 @@ class GestorGimnasio:
     def obtener_todos_los_miembros(self):
         return list(self.usuarios_gym.find())
 
-    def crear_usuario(self, nombre, email, contraseña):
-        try:
-            return self.usuarios_app.insert_one({
-            "nombre": nombre, 
-            "email": email, 
-            "password": contraseña,
-            "fecha_registro": datetime.now()
-        }).inserted_id
-        except DuplicateKeyError:
-            return None
-
-    def validar_credenciales(self, email, contraseña):
-        return self.usuarios_app.find_one({"email": email, "password": contraseña})
-
-    def obtener_usuario(self, uid):
-        return self.usuarios_app.find_one({"_id": ObjectId(uid)})
-
-    def actualizar_usuario(self, uid, datos):
-        res = self.usuarios_app.update_one({"_id": ObjectId(uid)}, {"$set": datos})
-        return res.modified_count > 0
-    
-    
     def cerrar_conexion(self):
         """Cerrar conexión a MongoDB"""
         if self.client:
