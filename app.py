@@ -3,10 +3,10 @@ from main import GestorGimnasio
 from datetime import datetime
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-app.secret_key = 'Ruby' # Clave para sesiones y tokens
+app.secret_key = 'Ruby'
 
 # --- CONFIGURACIÓN DE CORREO ---
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -52,17 +52,21 @@ def login():
     if request.method == 'POST':
         email = request.form.get('email')
         contraseña = request.form.get('contraseña')
-        usuario = gestor.validar_credenciales(email, contraseña)
+        
+        usuario = gestor.usuarios.find_one({"email": email})
 
-        if usuario:
-            session['logueado'] = True
-            session['usuario_id'] = str(usuario['_id']) 
-            session['nombre'] = usuario['nombre']
-            flash(f"¡Bienvenido de nuevo, {usuario['nombre']}!", "success")
-            return redirect(url_for('dashboard'))
+        if not usuario:
+            flash("El usuario no existe. Por favor, regístrate.", "danger")
         else:
-            flash("Correo o contraseña incorrectos", "danger")
-            
+            if check_password_hash(usuario['password'], contraseña):
+                session['logueado'] = True
+                session['usuario_id'] = str(usuario['_id'])
+                session['nombre'] = usuario['nombre']
+                flash(f"¡Bienvenido de nuevo, {usuario['nombre']}!", "success")
+                return redirect(url_for('dashboard'))
+            else:
+                flash("Contraseña incorrecta.", "danger")
+                
     return render_template('login.html')
 
 @app.route('/recuperar_password', methods=['GET', 'POST'])

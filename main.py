@@ -3,11 +3,20 @@ from pymongo.errors import DuplicateKeyError, ConnectionFailure
 from bson.objectid import ObjectId
 from datetime import datetime
 from werkzeug.security import check_password_hash 
+import urllib.parse 
 
 class GestorGimnasio:
-    def __init__(self, uri: str = 'mongodb+srv://dtntakumi13_db_user:Ghostsoldier12*@gimnasio.efxu3ej.mongodb.net/'):
+    def __init__(self):
+        usuario = "dtntakumi13_db_user"
+        password = urllib.parse.quote_plus("Ghostsoldier12*")
+        
+        uri = f"mongodb+srv://{usuario}:{password}@gimnasio.efxu3ej.mongodb.net/?retryWrites=true&w=majority"
+        
         try:
-            self.client = MongoClient(uri)
+            self.client = MongoClient(uri, serverSelectionTimeoutMS=5000) 
+            
+            self.client.admin.command('ping')
+            
             self.db = self.client['Gimnasio']
             
             self.usuarios_gym = self.db['Usuarios']       
@@ -18,9 +27,13 @@ class GestorGimnasio:
             self.productos = self.db['Productos']
             
             self._crear_indices()
-            print("✅ Conectado a BD Gimnasio")
-        except ConnectionFailure:
-            print("❌ Error de conexión")
+            print("✅ Conectado exitosamente a MongoDB Atlas (BD Gimnasio)")
+            
+        except ConnectionFailure as e:
+            print(f"❌ Error de conexión: No se pudo conectar a MongoDB. {e}")
+            raise
+        except Exception as e:
+            print(f"❌ Ocurrió un error inesperado al iniciar: {e}")
             raise
 
     def _crear_indices(self):
@@ -30,12 +43,9 @@ class GestorGimnasio:
 
     @property
     def usuarios(self):
-        """Permite acceder a usuarios_app desde app.py usando gestor.usuarios"""
         return self.usuarios_app
 
-
     def crear_usuario(self, nombre, email, contraseña_encriptada):
-        """Registra un nuevo usuario con la contraseña ya encriptada"""
         try:
             return self.usuarios_app.insert_one({
                 "nombre": nombre, 
@@ -44,20 +54,16 @@ class GestorGimnasio:
                 "fecha_registro": datetime.now()
             }).inserted_id
         except DuplicateKeyError:
+            print(f"⚠️ El email {email} ya existe.")
             return None
 
     def validar_credenciales(self, email, contraseña_plana):
-        """Valida si el correo existe y la contraseña coincide (usando hash)"""
         usuario = self.usuarios_app.find_one({"email": email})
-        
-        if usuario:
-            if check_password_hash(usuario['password'], contraseña_plana):
-                return usuario
-        
+        if usuario and check_password_hash(usuario['password'], contraseña_plana):
+            return usuario
         return None
 
     def actualizar_password(self, email, nueva_pass_encriptada):
-        """Actualiza la contraseña de un usuario (usada en recuperación)"""
         try:
             resultado = self.usuarios_app.update_one(
                 {"email": email}, 
@@ -68,14 +74,12 @@ class GestorGimnasio:
             print(f"Error al actualizar password: {e}")
             return False
 
-
     def obtener_usuario(self, uid):
         return self.usuarios_app.find_one({"_id": ObjectId(uid)})
 
     def actualizar_usuario(self, uid, datos):
         res = self.usuarios_app.update_one({"_id": ObjectId(uid)}, {"$set": datos})
         return res.modified_count > 0
-
 
     def registrar_membresia_cliente(self, nombre, telefono, tipo_membresia, pago):
         try:
@@ -89,14 +93,14 @@ class GestorGimnasio:
             }
             self.usuarios_gym.update_one({"telefono": telefono}, {"$set": datos}, upsert=True)
             return True
-        except Exception:
+        except Exception as e:
+            print(f"Error al registrar membresía: {e}")
             return False
 
     def obtener_todos_los_miembros(self):
         return list(self.usuarios_gym.find())
 
     def cerrar_conexion(self):
-        """Cerrar conexión a MongoDB"""
         if self.client:
             self.client.close()
             print("🔌 Conexión cerrada")
