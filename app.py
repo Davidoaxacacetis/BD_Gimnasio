@@ -106,6 +106,12 @@ def restablecer_token(token):
 
     if request.method == 'POST':
         nueva_pass = request.form.get('contraseña')
+        confirmar_pass = request.form.get('confirmar_contraseña')
+
+        if nueva_pass != confirmar_pass:
+            flash("Las contraseñas no coinciden.", "danger")
+            return render_template('nueva_password.html')
+        
         pass_encriptada = generate_password_hash(nueva_pass)
         
         if gestor.actualizar_password(email, pass_encriptada):
@@ -115,7 +121,6 @@ def restablecer_token(token):
             flash("Error al actualizar la contraseña.", "danger")
             
     return render_template('nueva_password.html')
-
 @app.route('/editar_usuario', methods=['GET', 'POST'])
 def editar_usuario():
     if 'usuario_id' not in session:
