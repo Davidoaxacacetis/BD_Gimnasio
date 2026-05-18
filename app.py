@@ -1,24 +1,26 @@
+import os
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from main import GestorGimnasio
 from datetime import datetime
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer
 from werkzeug.security import generate_password_hash, check_password_hash
+from dotenv import load_dotenv
+
+# Cargar configuraciones seguras
+load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = 'Ruby'
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "LlavePorDefectoSiNoHayEnv")
 
-# --- CONFIGURACIÓN DE CORREO ---
+# --- CONFIGURACIÓN DE CORREO DESDE EL ENTORNO ---
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'dtntakumi13@gmail.com'
+app.config['MAIL_USERNAME'] = os.getenv("MAIL_USERNAME")
+app.config['MAIL_PASSWORD'] = os.getenv("MAIL_PASSWORD") 
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv("MAIL_USERNAME")
 
-app.config['MAIL_PASSWORD'] = 'yaeo djrh bvzl ytns' 
-
-app.config['MAIL_DEFAULT_SENDER'] = 'dtntakumi13@gmail.com'
-
-# Inicialización de extensiones
 mail = Mail(app)
 serializer = URLSafeTimedSerializer(app.secret_key)
 gestor = GestorGimnasio()
@@ -38,7 +40,6 @@ def registro():
             return render_template("registro.html")
 
         pass_encriptada = generate_password_hash(contraseña)
-        
         usuario_id = gestor.crear_usuario(nombre, email, pass_encriptada)
 
         if usuario_id:
@@ -121,6 +122,7 @@ def restablecer_token(token):
             flash("Error al actualizar la contraseña.", "danger")
             
     return render_template('nueva_password.html')
+
 @app.route('/editar_usuario', methods=['GET', 'POST'])
 def editar_usuario():
     if 'usuario_id' not in session:

@@ -1,20 +1,21 @@
+import os
 from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError, ConnectionFailure
 from bson.objectid import ObjectId
 from datetime import datetime
 from werkzeug.security import check_password_hash 
-import urllib.parse 
+from dotenv import load_dotenv
+
+# Cargar variables desde el archivo .env
+load_dotenv()
 
 class GestorGimnasio:
     def __init__(self):
-        usuario = "dtntakumi13_db_user"
-        password = urllib.parse.quote_plus("Ghostsoldier12*")
-        
-        uri = f"mongodb+srv://{usuario}:{password}@gimnasio.efxu3ej.mongodb.net/?retryWrites=true&w=majority"
+        # Lee la URI directamente desde el entorno
+        uri = os.getenv("MONGO_URI")
         
         try:
             self.client = MongoClient(uri, serverSelectionTimeoutMS=5000) 
-            
             self.client.admin.command('ping')
             
             self.db = self.client['Gimnasio']
@@ -37,7 +38,6 @@ class GestorGimnasio:
             raise
 
     def _crear_indices(self):
-        """Crea índices únicos para evitar correos o teléfonos duplicados"""
         self.usuarios_app.create_index("email", unique=True)
         self.usuarios_gym.create_index("telefono", unique=True)
 
