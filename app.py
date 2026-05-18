@@ -78,11 +78,9 @@ def recuperar_password():
         usuario = gestor.usuarios.find_one({"email": email}) 
         
         if not usuario:
-            # Si el usuario no existe en la base de datos, avisa directamente
             flash("El correo electrónico no se encuentra registrado.", "danger")
             return render_template('pedir_email.html')
         
-        # Si el usuario existe, se genera el token y se envía el correo
         token = serializer.dumps(email, salt='recuperar-password')
         enlace_recuperacion = url_for('restablecer_token', token=token, _external=True)
         
@@ -91,13 +89,11 @@ def recuperar_password():
         
         try:
             mail.send(msg)
-            # Muestra la pantalla confirmando que el correo fue enviado
             return render_template('confirmacion_envio.html')
         except Exception as e:
             flash(f"Error al enviar el correo: {str(e)}", "danger")
             return render_template('pedir_email.html')
             
-    # Método GET: Muestra el formulario para pedir el email
     return render_template('pedir_email.html')
 
 @app.route('/restablecer/<token>', methods=['GET', 'POST'])
