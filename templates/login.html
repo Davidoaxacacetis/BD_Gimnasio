@@ -1,4 +1,4 @@
-{%extends "base.html" %}
+{% extends "base.html" %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -9,30 +9,30 @@
                 
                 <form action="{{url_for('login')}}" method="POST">
                     <div class="mb-3">
-                        <label class="form-label">Correo electronico</label>
+                        <label class="form-label">Correo electrónico</label>
                         <input type="email" name="email" class="form-control" required>
                     </div>
                     <div class="mb-4">
                         <label class="form-label">Contraseña</label>
                         <input type="password" 
                                 name="contraseña" 
-                                class="form-control rounded-pill" 
+                                class="form-control" 
                                 id="contraseña"
                                 required
                                 pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&]).{8,}"
                                 title="La contraseña debe tener al menos 8 caracteres, incluir una mayúscula, una minúscula, un número y un carácter especial (@$!%*?&)">
                     </div>
-                    <button type="submit" class="btn btn-success w-100">Iniciar sesion</button>
+                    <button type="submit" class="btn btn-success w-100">Iniciar sesión</button>
                 </form>
 
                 <div class="text-center mt-3">
-                    <small>No tienes cuenta? <a href="{{url_for('registro')}}">Registrate</a></small>
+                    <small>¿No tienes cuenta? <a href="{{url_for('registro')}}">Regístrate</a></small>
                 </div>
                 <div class="text-center mt-3">
-                    <small>Olvidaste tu contraseña? <a href="{{url_for('recuperar_password')}}">Recuperar contraseña</a></small>
+                    <small>¿Olvidaste tu contraseña? <a href="{{url_for('recuperar_password')}}">Recuperar contraseña</a></small>
                 </div>
             </div>
         </div>
+    </div>
 </div>
-
 {% endblock %}
