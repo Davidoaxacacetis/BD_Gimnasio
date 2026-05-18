@@ -75,20 +75,27 @@ def recuperar_password():
         email = request.form.get('email')
         usuario = gestor.usuarios.find_one({"email": email}) 
         
-        if usuario:
-            token = serializer.dumps(email, salt='recuperar-password')
-            enlace_recuperacion = url_for('restablecer_token', token=token, _external=True)
-            
-            msg = Message("Restablecer tu Contraseña - Gimnasio", recipients=[email])
-            msg.body = f"Hola {usuario['nombre']}, haz clic aquí para cambiar tu clave: {enlace_recuperacion}"
-            
-            try:
-                mail.send(msg)
-                return render_template('confirmacion_envio.html')
-            except Exception as e:
-                flash(f"Error al enviar el correo: {str(e)}", "danger")
+        if not usuario:
+            # Si el usuario no existe en la base de datos, avisa directamente
+            flash("El correo electrónico no se encuentra registrado.", "danger")
+            return render_template('pedir_email.html')
         
-        flash("Si el correo existe, se ha enviado un enlace.", "info")
+        # Si el usuario existe, se genera el token y se envía el correo
+        token = serializer.dumps(email, salt='recuperar-password')
+        enlace_recuperacion = url_for('restablecer_token', token=token, _external=True)
+        
+        msg = Message("Restablecer tu Contraseña - Gimnasio", recipients=[email])
+        msg.body = f"Hola {usuario['nombre']}, haz clic aquí para cambiar tu clave: {enlace_recuperacion}"
+        
+        try:
+            mail.send(msg)
+            # Muestra la pantalla confirmando que el correo fue enviado
+            return render_template('confirmacion_envio.html')
+        except Exception as e:
+            flash(f"Error al enviar el correo: {str(e)}", "danger")
+            return render_template('pedir_email.html')
+            
+    # Método GET: Muestra el formulario para pedir el email
     return render_template('pedir_email.html')
 
 @app.route('/restablecer/<token>', methods=['GET', 'POST'])
