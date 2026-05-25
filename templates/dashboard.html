@@ -3,22 +3,30 @@
     <div class="card shadow-sm border-0 p-4 mb-4">
         <h4 class="fw-bold"><i class="bi bi-plus-circle me-2"></i>Nueva Membresía</h4>
         <form method="POST" action="{{ url_for('comprar_membresia') }}" class="row g-3">
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <input type="text" name="nombre_cliente" class="form-control" placeholder="Nombre del Cliente" required>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <input type="text" name="telefono" class="form-control" placeholder="Teléfono" required>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
+                <select name="plan_disciplina" class="form-select" required>
+                    <option value="" disabled selected>Disciplina...</option>
+                    <option value="Pesas">Pesas</option>
+                    <option value="Crossfit">Crossfit</option>
+                    <option value="Boxeo">Boxeo</option>
+                </select>
+            </div>
+            <div class="col-md-2">
                 <select name="tipo_membresia" class="form-select" required>
-                    <option value="Mensual">Mensual</option>
-                    <option value="Anual">Anual</option>
+                    <option value="Mensual">Mensual (1 Mes)</option>
+                    <option value="Anual">Anual (1 Año)</option>
                 </select>
             </div>
             <div class="col-md-2">
                 <input type="number" name="pago" class="form-control" placeholder="Pago $" required>
             </div>
-            <div class="col-md-1">
+            <div class="col-md-2">
                 <button type="submit" class="btn btn-primary w-100">Ok</button>
             </div>
         </form>
@@ -31,8 +39,11 @@
                 <tr>
                     <th>Nombre</th>
                     <th>Teléfono</th>
-                    <th>Plan</th>
-                    <th>Fecha</th>
+                    <th>Disciplina</th>
+                    <th>Duración</th>
+                    <th>Pago</th>
+                    <th>Fecha Inicio</th>
+                    <th>Vencimiento</th>
                     <th>Estado</th>
                 </tr>
             </thead>
@@ -41,9 +52,18 @@
                 <tr>
                     <td>{{ miembro.nombre }}</td>
                     <td>{{ miembro.telefono }}</td>
-                    <td><span class="badge bg-info text-dark">{{ miembro.membresia }}</span></td>
+                    <td><span class="badge bg-primary">{{ miembro.disciplina }}</span></td>
+                    <td><span class="badge bg-info text-dark">{{ miembro.membresia_actual or miembro.membresia }}</span></td>
+                    <td><strong>${{ miembro.pago_realizado }}</strong></td>
                     <td>{{ miembro.fecha_inscripcion }}</td>
-                    <td><span class="badge bg-success">Activo</span></td>
+                    <td>{{ miembro.vence }}</td>
+                    <td>
+                        {% if miembro.estado == "Activo" %}
+                        <span class="badge bg-success">Activo</span>
+                        {% else %}
+                        <span class="badge bg-danger">Inactivo</span>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>

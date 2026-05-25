@@ -176,13 +176,30 @@ def comprar_membresia():
 
     nombre = request.form.get('nombre_cliente')
     telefono = request.form.get('telefono')
-    tipo = request.form.get('tipo_membresia')
+    disciplina = request.form.get('plan_disciplina') 
+    tipo = request.form.get('tipo_membresia')        
     pago = request.form.get('pago')
 
-    if gestor.registrar_membresia_cliente(nombre, telefono, tipo, pago):
-        flash(f"Membresía de {nombre} registrada.", "success")
+    if gestor.registrar_membresia_cliente(nombre, telefono, disciplina, tipo, pago):
+        flash(f"Membresía de {nombre} registrada exitosamente.", "success")
     else:
-        flash("Error al registrar.", "danger")
+        flash("Error al registrar la membresía.", "danger")
+    return redirect(url_for('dashboard'))
+
+@app.route('/eliminar_membresia/<telefono>')
+def borrar_miembro(telefono):
+    if gestor.eliminar_membresia(telefono):
+        flash("Miembro eliminado correctamente.", "success")
+    else:
+        flash("No se pudo eliminar.", "danger")
+    return redirect(url_for('dashboard'))
+
+@app.route('/cambiar_estado/<telefono>/<estado>')
+def cambiar_estado(telefono, estado):
+    if gestor.cambiar_estado_membresia(telefono, estado):
+        flash(f"Membresía cambiada a {estado}.", "info")
+    else:
+        flash("Error al cambiar el estado.", "danger")
     return redirect(url_for('dashboard'))
 
 if __name__ == '__main__':
