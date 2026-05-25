@@ -56,19 +56,16 @@ def login():
         email = request.form.get('email')
         contraseña = request.form.get('contraseña')
         
-        usuario = gestor.usuarios.find_one({"email": email})
+        usuario = gestor.validar_credenciales(email, contraseña)
 
-        if not usuario:
-            flash("El usuario no existe. Por favor, regístrate.", "danger")
+        if usuario:
+            session['logueado'] = True
+            session['usuario_id'] = str(usuario['_id'])
+            session['nombre'] = usuario['nombre']
+            flash(f"¡Bienvenido de nuevo, {usuario['nombre']}!", "success")
+            return redirect(url_for('dashboard'))
         else:
-            if check_password_hash(usuario['password'], contraseña):
-                session['logueado'] = True
-                session['usuario_id'] = str(usuario['_id'])
-                session['nombre'] = usuario['nombre']
-                flash(f"¡Bienvenido de nuevo, {usuario['nombre']}!", "success")
-                return redirect(url_for('dashboard'))
-            else:
-                flash("Contraseña incorrecta.", "danger")
+            flash("Correo o contraseña incorrectos. Verifica tus datos o regístrate.", "danger")
                 
     return render_template('login.html')
 
