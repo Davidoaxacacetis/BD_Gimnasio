@@ -186,20 +186,46 @@ def comprar_membresia():
         flash("Error al registrar la membresía.", "danger")
     return redirect(url_for('dashboard'))
 
+
 @app.route('/eliminar_membresia/<telefono>')
 def borrar_miembro(telefono):
+    if 'usuario_id' not in session:
+        return redirect(url_for('login'))
+
     if gestor.eliminar_membresia(telefono):
-        flash("Miembro eliminado correctamente.", "success")
+        flash("Membresía de forma permanente.", "success")
     else:
-        flash("No se pudo eliminar.", "danger")
+        flash("No se pudo eliminar la membresía.", "danger")
     return redirect(url_for('dashboard'))
 
 @app.route('/cambiar_estado/<telefono>/<estado>')
 def cambiar_estado(telefono, estado):
+    if 'usuario_id' not in session:
+        return redirect(url_for('login'))
+
     if gestor.cambiar_estado_membresia(telefono, estado):
-        flash(f"Membresía cambiada a {estado}.", "info")
+        flash(f"Membresía cambiada a {estado} con éxito.", "info")
     else:
         flash("Error al cambiar el estado.", "danger")
+    return redirect(url_for('dashboard'))
+
+@app.route('/editar_membresia/<telefono_actual>', methods=['POST'])
+def editar_membresia_ruta(telefono_actual):
+    if 'usuario_id' not in session:
+        return redirect(url_for('login'))
+
+    datos_actualizados = {
+        "nombre": request.form.get("nombre"),
+        "telefono": request.form.get("telefono"),
+        "disciplina": request.form.get("disciplina"),
+        "membresia_actual": request.form.get("membresia_actual"),
+        "pago_realizado": float(request.form.get("pago_realizado"))
+    }
+
+    if gestor.modificar_membresia(telefono_actual, datos_actualizados):
+        flash("Membresía modificada correctamente.", "success")
+    else:
+        flash("No se realizaron cambios o hubo un inconveniente.", "danger")
     return redirect(url_for('dashboard'))
 
 if __name__ == '__main__':

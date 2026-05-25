@@ -34,7 +34,7 @@
 
     <div class="card shadow-sm border-0 p-4">
         <h5 class="fw-bold mb-3">Miembros Registrados</h5>
-        <table class="table table-hover">
+        <table class="table table-hover align-middle">
             <thead class="table-light">
                 <tr>
                     <th>Nombre</th>
@@ -45,6 +45,7 @@
                     <th>Fecha Inicio</th>
                     <th>Vencimiento</th>
                     <th>Estado</th>
+                    <th class="text-center">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -64,7 +65,80 @@
                         <span class="badge bg-danger">Inactivo</span>
                         {% endif %}
                     </td>
+                    <td class="text-center">
+                        <div class="btn-group btn-group-sm" role="group">
+                            {% if miembro.estado == "Activo" %}
+                            <a href="{{ url_for('cambiar_estado', telefono=miembro.telefono, estado='Inactivo') }}" 
+                               class="btn btn-warning" title="Cerrar/Pausar Membresía">
+                                <i class="bi bi-pause-fill"></i> Pausar
+                            </a>
+                            {% else %}
+                            <a href="{{ url_for('cambiar_estado', telefono=miembro.telefono, estado='Activo') }}" 
+                               class="btn btn-success" title="Abrir/Activar Membresía">
+                                <i class="bi bi-play-fill"></i> Activar
+                            </a>
+                            {% endif %}
+
+                            <button type="button" class="btn btn-info text-white" data-bs-toggle="modal" 
+                                    data-bs-target="#modalEditar{{ loop.index }}">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+
+                            <a href="{{ url_for('borrar_miembro', telefono=miembro.telefono) }}" 
+                               class="btn btn-danger" 
+                               onclick="return confirm('¿Seguro que deseas eliminar por completo a {{ miembro.nombre }}?');"
+                               title="Borrar Membresía">
+                                <i class="bi bi-trash-fill"></i>
+                            </a>
+                        </div>
+                    </td>
                 </tr>
+
+                <div class="modal fade" id="modalEditar{{ loop.index }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title fw-bold">Modificar Miembro: {{ miembro.nombre }}</h5>
+                                <button type="button" class="btn-close" data-bs-content="modal" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <form method="POST" action="{{ url_for('editar_membresia_ruta', telefono_actual=miembro.telefono) }}">
+                                <div class="modal-body row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label small fw-bold">Nombre</label>
+                                        <input type="text" name="nombre" class="form-control" value="{{ miembro.nombre }}" required>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small fw-bold">Teléfono Nuevo (Opcional)</label>
+                                        <input type="text" name="telefono" class="form-control" value="{{ miembro.telefono }}" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">Disciplina</label>
+                                        <select name="disciplina" class="form-select" required>
+                                            <option value="Pesas" {% if miembro.disciplina == "Pesas" %}selected{% endif %}>Pesas</option>
+                                            <option value="Crossfit" {% if miembro.disciplina == "Crossfit" %}selected{% endif %}>Crossfit</option>
+                                            <option value="Boxeo" {% if miembro.disciplina == "Boxeo" %}selected{% endif %}>Boxeo</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">Duración</label>
+                                        <select name="membresia_actual" class="form-select" required>
+                                            <option value="Mensual" {% if (miembro.membresia_actual or miembro.membresia) == "Mensual" %}selected{% endif %}>Mensual (1 Mes)</option>
+                                            <option value="Anual" {% if (miembro.membresia_actual or miembro.membresia) == "Anual" %}selected{% endif %}>Anual (1 Año)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small fw-bold">Pago Realizado $</label>
+                                        <input type="number" name="pago_realizado" class="form-control" value="{{ miembro.pago_realizado }}" required>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
                 {% endfor %}
             </tbody>
         </table>
