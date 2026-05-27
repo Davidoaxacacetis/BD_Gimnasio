@@ -22,7 +22,6 @@ class GestorGimnasio:
             except:
                 self.db = self.client['Gimnasio']
             
-            # Mapeo de colecciones limpio
             self.usuarios_app = self.db['usuarios_sistema'] 
             self.membresias = self.db['Membresias']
             self.trabajadores = self.db['Trabajadores']
@@ -102,12 +101,20 @@ class GestorGimnasio:
             dias_duracion = 365 if "anual" in tipo_membresia.lower() else 30
             fecha_fin = fecha_inicio + timedelta(days=dias_duracion)
 
+            # Estructura del primer pago inicial
+            primer_pago = {
+                "monto": float(pago),
+                "fecha": fecha_inicio.strftime("%Y-%m-%d %H:%M:%S"),
+                "concepto": f"Inscripción Inicial ({tipo_membresia})"
+            }
+
             datos_membresia = {
                 "nombre_cliente": nombre,
                 "telefono_cliente": telefono,
                 "disciplina": disciplina, 
                 "tipo": tipo_membresia,
-                "pago_realizado": float(pago),
+                "pago_realizado": float(pago),  # Mantiene compatibilidad total con sumas
+                "historial_pagos": [primer_pago],
                 "fecha_inicio": fecha_inicio.strftime("%Y-%m-%d"),
                 "fecha_vencimiento": fecha_fin.strftime("%Y-%m-%d"),
                 "estado": "Activo"
@@ -126,6 +133,42 @@ class GestorGimnasio:
             print(f"❌ Error al registrar la membresía: {e}")
             return False
 
+    def agregar_pago_adicional(self, telefono, monto, concepto):
+        try:
+            if not concepto:
+                concepto = "Abono / Renovación"
+                
+            nuevo_pago = {
+                "monto": float(monto),
+                "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "concepto": concepto
+            }
+            
+            # Buscamos la membresía actual para extender la fecha si es necesario
+            membresia = self.membresias.find_one({"telefono_cliente": telefono})
+            updates = {
+                "$push": {"historial_pagos": nuevo_pago},
+                "$inc": {"pago_realizado": float(monto)}
+            }
+            
+            if membresia:
+                # Si el estado es Inactivo, lo reactivamos y recalculamos desde hoy
+                fecha_base = datetime.now()
+                dias = 365 if "anual" in membresia.get("tipo", "Mensual").lower() else 30
+                nueva_fin = fecha_base + timedelta(days=dias)
+                
+                updates["$set"] = {
+                    "estado": "Activo",
+                    "fecha_inicio": fecha_base.strftime("%Y-%m-%d"),
+                    "fecha_vencimiento": nueva_fin.strftime("%Y-%m-%d")
+                }
+
+            self.membresias.update_one({"telefono_cliente": telefono}, updates)
+            return True
+        except Exception as e:
+            print(f"❌ Error al agregar pago al historial: {e}")
+            return False
+
     def obtener_todos_los_miembros(self):
         return list(self.membresias.find())
 
@@ -141,7 +184,6 @@ class GestorGimnasio:
         try:
             datos_membresia = {}
             
-            # Si se cambia el tipo de membresía, recalculamos las fechas correspondientes
             if "membresia_actual" in nuevos_datos and nuevos_datos["membresia_actual"]:
                 fecha_inicio = datetime.now()
                 dias = 365 if "anual" in nuevos_datos["membresia_actual"].lower() else 30

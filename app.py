@@ -179,6 +179,20 @@ def comprar_membresia():
         flash("Error al registrar la membresía.", "danger")
     return redirect(url_for('dashboard'))
 
+@app.route('/agregar_pago/<telefono>', methods=['POST'])
+def agregar_pago(telefono):
+    if 'usuario_id' not in session:
+        return redirect(url_for('login'))
+        
+    monto = request.form.get('monto')
+    concepto = request.form.get('concepto')
+    
+    if gestor.agregar_pago_adicional(telefono, monto, concepto):
+        flash("Pago anexado al historial con éxito.", "success")
+    else:
+        flash("No se pudo procesar el pago.", "danger")
+    return redirect(url_for('dashboard'))
+
 @app.route('/eliminar_membresia/<telefono>')
 def borrar_miembro(telefono):
     if 'usuario_id' not in session:
