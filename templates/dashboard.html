@@ -1,4 +1,15 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %} 
+{% block content %}
+<style>
+    .btn-interactive {
+        transition: all 0.2s ease-in-out;
+    }
+    .btn-interactive:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+</style>
+
 <div class="container mt-4">
     <div class="card shadow-sm border-0 p-4 mb-4">
         <h4 class="fw-bold"><i class="bi bi-plus-circle me-2"></i>Nueva Membresía</h4>
@@ -45,50 +56,63 @@
                     <th>Fecha Inicio</th>
                     <th>Vencimiento</th>
                     <th>Estado</th>
-                    <th class="text-center">Acciones</th>
+                    <th class="text-center">Acciones del Sistema</th>
                 </tr>
             </thead>
             <tbody>
                 {% for miembro in miembros %}
                 <tr>
-                    <td>{{ miembro.nombre }}</td>
-                    <td>{{ miembro.telefono }}</td>
+                    <td>{{ miembro.nombre_cliente }}</td>
+                    <td>{{ miembro.telefono_cliente }}</td>
                     <td><span class="badge bg-primary">{{ miembro.disciplina }}</span></td>
-                    <td><span class="badge bg-info text-dark">{{ miembro.membresia_actual or miembro.membresia }}</span></td>
+                    <td><span class="badge bg-info text-dark">{{ miembro.tipo }}</span></td>
                     <td><strong>${{ miembro.pago_realizado }}</strong></td>
-                    <td>{{ miembro.fecha_inscripcion }}</td>
-                    <td>{{ miembro.vence }}</td>
+                    <td>{{ miembro.fecha_inicio }}</td>
+                    <td>{{ miembro.fecha_vencimiento }}</td>
                     <td>
                         {% if miembro.estado == "Activo" %}
-                        <span class="badge bg-success">Activo</span>
+                        <span class="badge bg-success px-3 py-2 rounded-pill">Activo</span>
                         {% else %}
-                        <span class="badge bg-danger">Inactivo</span>
+                        <span class="badge bg-danger px-3 py-2 rounded-pill">Inactivo</span>
                         {% endif %}
                     </td>
                     <td class="text-center">
-                        <div class="btn-group btn-group-sm" role="group">
+                        <div class="d-flex justify-content-center gap-2" role="group">
                             {% if miembro.estado == "Activo" %}
-                            <a href="{{ url_for('cambiar_estado', telefono=miembro.telefono, estado='Inactivo') }}" 
-                               class="btn btn-warning" title="Cerrar/Pausar Membresía">
-                                <i class="bi bi-pause-fill"></i> Pausar
+                            <a href="{{ url_for('cambiar_estado', telefono=miembro.telefono_cliente, estado='Inactivo') }}" 
+                               class="btn btn-sm btn-outline-warning btn-interactive align-self-center d-flex align-items-center gap-1" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="top" 
+                               title="Pausar temporalmente el acceso del cliente al gimnasio">
+                                <i class="bi bi-pause-fill fs-6"></i> Pausar
                             </a>
                             {% else %}
-                            <a href="{{ url_for('cambiar_estado', telefono=miembro.telefono, estado='Activo') }}" 
-                               class="btn btn-success" title="Abrir/Activar Membresía">
-                                <i class="bi bi-play-fill"></i> Activar
+                            <a href="{{ url_for('cambiar_estado', telefono=miembro.telefono_cliente, estado='Activo') }}" 
+                               class="btn btn-sm btn-outline-success btn-interactive align-self-center d-flex align-items-center gap-1" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="top" 
+                               title="Reactivar la cuenta del cliente para permitir el ingreso">
+                                <i class="bi bi-play-fill fs-6"></i> Activar
                             </a>
                             {% endif %}
 
-                            <button type="button" class="btn btn-info text-white" data-bs-toggle="modal" 
-                                    data-bs-target="#modalEditar{{ loop.index }}">
-                                <i class="bi bi-pencil-square"></i>
+                            <button type="button" 
+                                    class="btn btn-sm btn-outline-info btn-interactive align-self-center d-flex align-items-center gap-1" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#modalEditar{{ loop.index }}"
+                                    data-bs-tooltip="tooltip" 
+                                    data-bs-placement="top" 
+                                    title="Modificar datos, disciplina o pagos registrados">
+                                <i class="bi bi-pencil-square fs-6"></i> Editar
                             </button>
 
-                            <a href="{{ url_for('borrar_miembro', telefono=miembro.telefono) }}" 
-                               class="btn btn-danger" 
-                               onclick="return confirm('¿Seguro que deseas eliminar por completo a {{ miembro.nombre }}?');"
-                               title="Borrar Membresía">
-                                <i class="bi bi-trash-fill"></i>
+                            <a href="{{ url_for('borrar_miembro', telefono=miembro.telefono_cliente) }}" 
+                               class="btn btn-sm btn-outline-danger btn-interactive align-self-center d-flex align-items-center gap-1" 
+                               onclick="return confirm('¿Seguro que deseas eliminar por completo a {{ miembro.nombre_cliente }}? Esto borrará todo su historial.');"
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="top" 
+                               title="Eliminar permanentemente al miembro del sistema">
+                                <i class="bi bi-trash-fill fs-6"></i> Borrar
                             </a>
                         </div>
                     </td>
@@ -98,18 +122,18 @@
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h5 class="modal-title fw-bold">Modificar Miembro: {{ miembro.nombre }}</h5>
-                                <button type="button" class="btn-close" data-bs-content="modal" data-bs-dismiss="modal" aria-label="Close"></button>
+                                <h5 class="modal-title fw-bold">Modificar Miembro: {{ miembro.nombre_cliente }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
-                            <form method="POST" action="{{ url_for('editar_membresia_ruta', telefono_actual=miembro.telefono) }}">
+                            <form method="POST" action="{{ url_for('editar_membresia_ruta', telefono_actual=miembro.telefono_cliente) }}">
                                 <div class="modal-body row g-3">
                                     <div class="col-12">
                                         <label class="form-label small fw-bold">Nombre</label>
-                                        <input type="text" name="nombre" class="form-control" value="{{ miembro.nombre }}" required>
+                                        <input type="text" name="nombre" class="form-control" value="{{ miembro.nombre_cliente }}" required>
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label small fw-bold">Teléfono Nuevo (Opcional)</label>
-                                        <input type="text" name="telefono" class="form-control" value="{{ miembro.telefono }}" required>
+                                        <input type="text" name="telefono" class="form-control" value="{{ miembro.telefono_cliente }}" required>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label small fw-bold">Disciplina</label>
@@ -122,8 +146,8 @@
                                     <div class="col-md-6">
                                         <label class="form-label small fw-bold">Duración</label>
                                         <select name="membresia_actual" class="form-select" required>
-                                            <option value="Mensual" {% if (miembro.membresia_actual or miembro.membresia) == "Mensual" %}selected{% endif %}>Mensual (1 Mes)</option>
-                                            <option value="Anual" {% if (miembro.membresia_actual or miembro.membresia) == "Anual" %}selected{% endif %}>Anual (1 Año)</option>
+                                            <option value="Mensual" {% if miembro.tipo == "Mensual" %}selected{% endif %}>Mensual (1 Mes)</option>
+                                            <option value="Anual" {% if miembro.tipo == "Anual" %}selected{% endif %}>Anual (1 Año)</option>
                                         </select>
                                     </div>
                                     <div class="col-12">
@@ -144,4 +168,13 @@
         </table>
     </div>
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"], [data-bs-tooltip="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    });
+</script>
 {% endblock %}

@@ -2,7 +2,7 @@ import os
 from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError, ConnectionFailure
 from bson.objectid import ObjectId
-from datetime import datetime
+from datetime import datetime, timedelta
 from werkzeug.security import check_password_hash 
 from dotenv import load_dotenv
 
@@ -22,8 +22,7 @@ class GestorGimnasio:
             except:
                 self.db = self.client['Gimnasio']
             
-            # Mapeo de colecciones
-            self.usuarios_gym = self.db['Usuarios']       
+            # Mapeo de colecciones limpio
             self.usuarios_app = self.db['usuarios_sistema'] 
             self.membresias = self.db['Membresias']
             self.trabajadores = self.db['Trabajadores']
@@ -43,13 +42,15 @@ class GestorGimnasio:
     def _crear_indices(self):
         self.usuarios_app.create_index("email", unique=True)
         try:
-            self.usuarios_gym.create_index("telefono", unique=True)
+            self.membresias.create_index("telefono_cliente", unique=True)
         except Exception:
             pass
 
     @property
     def usuarios(self):
         return self.usuarios_app
+
+    # --- GESTIÓN DE USUARIOS DEL SISTEMA (LOGIN / REGISTRO) ---
 
     def crear_usuario(self, nombre, email, contraseña_encriptada):
         try:
@@ -93,16 +94,12 @@ class GestorGimnasio:
         except Exception:
             return False
 
+    # --- GESTIÓN DE MEMBRESÍAS DE CLIENTES ---
+
     def registrar_membresia_cliente(self, nombre, telefono, disciplina, tipo_membresia, pago):
         try:
             fecha_inicio = datetime.now()
-            
-            if "anual" in tipo_membresia.lower():
-                dias_duracion = 365
-            else:
-                dias_duracion = 30
-                
-            from datetime import timedelta
+            dias_duracion = 365 if "anual" in tipo_membresia.lower() else 30
             fecha_fin = fecha_inicio + timedelta(days=dias_duracion)
 
             datos_membresia = {
@@ -122,72 +119,45 @@ class GestorGimnasio:
                 upsert=True
             )
 
-            datos_cliente = {
-                "nombre": nombre,
-                "telefono": telefono,
-                "disciplina": disciplina, 
-                "membresia_actual": tipo_membresia,
-                "pago_realizado": float(pago),
-                "fecha_inscripcion": fecha_inicio.strftime("%Y-%m-%d"), 
-                "vence": fecha_fin.strftime("%Y-%m-%d"),
-                "estado": "Activo",
-                "ultima_actualizacion": datetime.now()
-            }
-            self.usuarios_gym.update_one(
-                {"telefono": telefono}, 
-                {"$set": datos_cliente}, 
-                upsert=True
-            )
-
             print(f"✅ Membresía registrada con éxito. Vence el: {fecha_fin.strftime('%Y-%m-%d')}")
             return True
 
         except Exception as e:
-            print(f"❌ Error al registrar la membresía en las colecciones: {e}")
+            print(f"❌ Error al registrar la membresía: {e}")
             return False
 
+    def obtener_todos_los_miembros(self):
+        return list(self.membresias.find())
+
     def eliminar_membresia(self, telefono):
-        """
-        Borra por completo los registros del miembro en ambas colecciones.
-        """
         try:
-            # Elimina de la lista de miembros del gimnasio
-            res_gym = self.usuarios_gym.delete_one({"telefono": telefono})
-            # Elimina de la colección de membresías histórico/pagos
-            res_memb = self.membresias.delete_one({"telefono_cliente": telefono})
-            
-            return res_gym.deleted_count > 0 or res_memb.deleted_count > 0
+            res = self.membresias.delete_one({"telefono_cliente": telefono})
+            return res.deleted_count > 0
         except Exception as e:
             print(f"❌ Error al eliminar membresía: {e}")
             return False
 
     def modificar_membresia(self, telefono_actual, nuevos_datos):
         try:
-            if "membresia_actual" in nuevos_datos:
+            datos_membresia = {}
+            
+            # Si se cambia el tipo de membresía, recalculamos las fechas correspondientes
+            if "membresia_actual" in nuevos_datos and nuevos_datos["membresia_actual"]:
                 fecha_inicio = datetime.now()
                 dias = 365 if "anual" in nuevos_datos["membresia_actual"].lower() else 30
-                from datetime import timedelta
                 fecha_fin = fecha_inicio + timedelta(days=dias)
                 
-                nuevos_datos["fecha_inscripcion"] = fecha_inicio.strftime("%Y-%m-%d")
-                nuevos_datos["vence"] = fecha_fin.strftime("%Y-%m-%d")
+                datos_membresia["tipo"] = nuevos_datos["membresia_actual"]
+                datos_membresia["fecha_inicio"] = fecha_inicio.strftime("%Y-%m-%d")
+                datos_membresia["fecha_vencimiento"] = fecha_fin.strftime("%Y-%m-%d")
 
-            self.usuarios_gym.update_one({"telefono": telefono_actual}, {"$set": nuevos_datos})
-            
-            datos_membresia = {}
             if "nombre" in nuevos_datos: datos_membresia["nombre_cliente"] = nuevos_datos["nombre"]
             if "telefono" in nuevos_datos: datos_membresia["telefono_cliente"] = nuevos_datos["telefono"]
             if "disciplina" in nuevos_datos: datos_membresia["disciplina"] = nuevos_datos["disciplina"]
-            if "membresia_actual" in nuevos_datos: 
-                datos_membresia["tipo"] = nuevos_datos["membresia_actual"]
-                datos_membresia["fecha_inicio"] = nuevos_datos["fecha_inscripcion"]
-                datos_membresia["fecha_vencimiento"] = nuevos_datos["vence"]
             if "pago_realizado" in nuevos_datos: datos_membresia["pago_realizado"] = nuevos_datos["pago_realizado"]
-            if "estado" in nuevos_datos: datos_membresia["estado"] = nuevos_datos["estado"]
 
             if datos_membresia:
                 self.membresias.update_one({"telefono_cliente": telefono_actual}, {"$set": datos_membresia})
-
             return True
         except Exception as e:
             print(f"❌ Error al modificar membresía: {e}")
@@ -198,23 +168,15 @@ class GestorGimnasio:
             if nuevo_estado not in ["Activo", "Inactivo"]:
                 return False
 
-            self.usuarios_gym.update_one(
-                {"telefono": telefono}, 
-                {"$set": {"estado": nuevo_estado, "ultima_actualizacion": datetime.now()}}
-            )
             self.membresias.update_one(
                 {"telefono_cliente": telefono}, 
                 {"$set": {"estado": nuevo_estado}}
             )
-            
             print(f"🔄 Membresía asociada al teléfono {telefono} ahora está: {nuevo_estado}")
             return True
         except Exception as e:
             print(f"❌ Error al cambiar el estado de la membresía: {e}")
             return False
-
-    def obtener_todos_los_miembros(self):
-        return list(self.usuarios_gym.find())
 
     def cerrar_conexion(self):
         if self.client:

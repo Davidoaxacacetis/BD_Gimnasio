@@ -4,16 +4,14 @@ from main import GestorGimnasio
 from datetime import datetime
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import generate_password_hash
 from dotenv import load_dotenv
 
-# Cargar configuraciones seguras
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "LlavePorDefectoSiNoHayEnv")
 
-# --- CONFIGURACIÓN DE CORREO DESDE EL ENTORNO ---
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
@@ -24,8 +22,6 @@ app.config['MAIL_DEFAULT_SENDER'] = os.getenv("MAIL_USERNAME")
 mail = Mail(app)
 serializer = URLSafeTimedSerializer(app.secret_key)
 gestor = GestorGimnasio()
-
-# --- RUTAS ---
 
 @app.route('/registro', methods=['GET', 'POST'])
 def registro():
@@ -183,14 +179,13 @@ def comprar_membresia():
         flash("Error al registrar la membresía.", "danger")
     return redirect(url_for('dashboard'))
 
-
 @app.route('/eliminar_membresia/<telefono>')
 def borrar_miembro(telefono):
     if 'usuario_id' not in session:
         return redirect(url_for('login'))
 
     if gestor.eliminar_membresia(telefono):
-        flash("Membresía de forma permanente.", "success")
+        flash("Membresía eliminada de forma permanente.", "success")
     else:
         flash("No se pudo eliminar la membresía.", "danger")
     return redirect(url_for('dashboard'))
