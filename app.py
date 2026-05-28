@@ -7,6 +7,7 @@ from itsdangerous import URLSafeTimedSerializer
 from werkzeug.security import generate_password_hash
 from dotenv import load_dotenv
 
+# Cargar variables de entorno
 load_dotenv()
 
 app = Flask(__name__)
@@ -17,11 +18,21 @@ app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = os.getenv("MAIL_USERNAME")
 app.config['MAIL_PASSWORD'] = os.getenv("MAIL_PASSWORD") 
-app.config['MAIL_DEFAULT_SENDER'] = os.getenv("MAIL_USERNAME")
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv("MAIL_USERNAME", "noreply@gimnasio.com")
 
 mail = Mail(app)
 serializer = URLSafeTimedSerializer(app.secret_key)
 gestor = GestorGimnasio()
+
+@app.route('/')
+def dashboard():
+    if 'usuario_id' not in session:
+        return redirect(url_for('login'))
+    
+    miembros = gestor.obtener_todos_los_miembros()
+    return render_template('dashboard.html', 
+                            nombre=session['nombre'], 
+                            miembros=miembros)
 
 @app.route('/registro', methods=['GET', 'POST'])
 def registro():
@@ -78,7 +89,12 @@ def recuperar_password():
         token = serializer.dumps(email, salt='recuperar-password')
         enlace_recuperacion = url_for('restablecer_token', token=token, _external=True)
         
-        msg = Message("Restablecer tu Contraseña - Gimnasio", recipients=[email])
+        remitente = os.getenv("MAIL_USERNAME") or app.config['MAIL_DEFAULT_SENDER']
+        
+        msg = Message("Restablecer tu Contraseña - Gimnasio", 
+                    sender=remitente,
+                    recipients=[email])
+        
         msg.body = f"Hola {usuario['nombre']}, haz clic aquí para cambiar tu clave: {enlace_recuperacion}"
         
         try:
@@ -152,16 +168,6 @@ def perfil():
     usuario = gestor.obtener_usuario(session['usuario_id'])
     return render_template('perfil.html', usuario=usuario)
 
-@app.route('/')
-def dashboard():
-    if 'usuario_id' not in session:
-        return redirect(url_for('login'))
-    
-    miembros = gestor.obtener_todos_los_miembros()
-    return render_template('dashboard.html', 
-                            nombre=session['nombre'], 
-                            miembros=miembros)
-
 @app.route('/comprar_membresia', methods=['POST'])
 def comprar_membresia():
     if 'usuario_id' not in session:
@@ -199,7 +205,7 @@ def borrar_miembro(telefono):
         return redirect(url_for('login'))
 
     if gestor.eliminar_membresia(telefono):
-        flash("Membresía eliminada de forma permanente.", "success")
+        flash("Membresía actualizada/eliminada correctamente.", "success")
     else:
         flash("No se pudo eliminar la membresía.", "danger")
     return redirect(url_for('dashboard'))
@@ -225,7 +231,7 @@ def editar_membresia_ruta(telefono_actual):
         "telefono": request.form.get("telefono"),
         "disciplina": request.form.get("disciplina"),
         "membresia_actual": request.form.get("membresia_actual"),
-        "pago_realizado": float(request.form.get("pago_realizado"))
+        "pago_realizado": float(request.form.get("pago_realizado") or 0)
     }
 
     if gestor.modificar_membresia(telefono_actual, datos_actualizados):
