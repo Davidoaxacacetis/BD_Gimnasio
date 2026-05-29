@@ -45,12 +45,6 @@ class GestorGimnasio:
         except Exception:
             pass
 
-    @property
-    def usuarios(self):
-        return self.usuarios_app
-
-    # --- GESTIÓN DE USUARIOS DEL SISTEMA (LOGIN / REGISTRO) ---
-
     def crear_usuario(self, nombre, email, contraseña_encriptada):
         try:
             return self.usuarios_app.insert_one({
@@ -101,7 +95,6 @@ class GestorGimnasio:
             dias_duracion = 365 if "anual" in tipo_membresia.lower() else 30
             fecha_fin = fecha_inicio + timedelta(days=dias_duracion)
 
-            # Estructura del primer pago inicial
             primer_pago = {
                 "monto": float(pago),
                 "fecha": fecha_inicio.strftime("%Y-%m-%d %H:%M:%S"),
@@ -113,7 +106,7 @@ class GestorGimnasio:
                 "telefono_cliente": telefono,
                 "disciplina": disciplina, 
                 "tipo": tipo_membresia,
-                "pago_realizado": float(pago),  # Mantiene compatibilidad total con sumas
+                "pago_realizado": float(pago),
                 "historial_pagos": [primer_pago],
                 "fecha_inicio": fecha_inicio.strftime("%Y-%m-%d"),
                 "fecha_vencimiento": fecha_fin.strftime("%Y-%m-%d"),
@@ -125,10 +118,7 @@ class GestorGimnasio:
                 {"$set": datos_membresia}, 
                 upsert=True
             )
-
-            print(f"✅ Membresía registrada con éxito. Vence el: {fecha_fin.strftime('%Y-%m-%d')}")
             return True
-
         except Exception as e:
             print(f"❌ Error al registrar la membresía: {e}")
             return False
@@ -144,7 +134,6 @@ class GestorGimnasio:
                 "concepto": concepto
             }
             
-            # Buscamos la membresía actual para extender la fecha si es necesario
             membresia = self.membresias.find_one({"telefono_cliente": telefono})
             updates = {
                 "$push": {"historial_pagos": nuevo_pago},
@@ -152,7 +141,6 @@ class GestorGimnasio:
             }
             
             if membresia:
-                # Si el estado es Inactivo, lo reactivamos y recalculamos desde hoy
                 fecha_base = datetime.now()
                 dias = 365 if "anual" in membresia.get("tipo", "Mensual").lower() else 30
                 nueva_fin = fecha_base + timedelta(days=dias)
@@ -193,10 +181,13 @@ class GestorGimnasio:
                 datos_membresia["fecha_inicio"] = fecha_inicio.strftime("%Y-%m-%d")
                 datos_membresia["fecha_vencimiento"] = fecha_fin.strftime("%Y-%m-%d")
 
-            if "nombre" in nuevos_datos: datos_membresia["nombre_cliente"] = nuevos_datos["nombre"]
-            if "telefono" in nuevos_datos: datos_membresia["telefono_cliente"] = nuevos_datos["telefono"]
-            if "disciplina" in nuevos_datos: datos_membresia["disciplina"] = nuevos_datos["disciplina"]
-            if "pago_realizado" in nuevos_datos: datos_membresia["pago_realizado"] = nuevos_datos["pago_realizado"]
+            if nuevos_datos.get("nombre"): datos_membresia["nombre_cliente"] = nuevos_datos["nombre"]
+            if nuevos_datos.get("telefono"): datos_membresia["telefono_cliente"] = nuevos_datos["telefono"]
+            if nuevos_datos.get("disciplina"): datos_membresia["disciplina"] = nuevos_datos["disciplina"]
+            
+            # Solo actualiza el pago si viene explícitamente en los nuevos datos y es válido
+            if "pago_realizado" in nuevos_datos: 
+                datos_membresia["pago_realizado"] = nuevos_datos["pago_realizado"]
 
             if datos_membresia:
                 self.membresias.update_one({"telefono_cliente": telefono_actual}, {"$set": datos_membresia})
@@ -214,7 +205,6 @@ class GestorGimnasio:
                 {"telefono_cliente": telefono}, 
                 {"$set": {"estado": nuevo_estado}}
             )
-            print(f"🔄 Membresía asociada al teléfono {telefono} ahora está: {nuevo_estado}")
             return True
         except Exception as e:
             print(f"❌ Error al cambiar el estado de la membresía: {e}")

@@ -6,8 +6,8 @@ from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer
 from werkzeug.security import generate_password_hash
 from dotenv import load_dotenv
+from functools import wraps
 
-# Cargar variables de entorno
 load_dotenv()
 
 app = Flask(__name__)
@@ -24,15 +24,21 @@ mail = Mail(app)
 serializer = URLSafeTimedSerializer(app.secret_key)
 gestor = GestorGimnasio()
 
+# Decorador para proteger rutas
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'usuario_id' not in session:
+            flash("Por favor, inicia sesión para acceder.", "warning")
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 @app.route('/')
+@login_required
 def dashboard():
-    if 'usuario_id' not in session:
-        return redirect(url_for('login'))
-    
     miembros = gestor.obtener_todos_los_miembros()
-    return render_template('dashboard.html', 
-                            nombre=session['nombre'], 
-                            miembros=miembros)
+    return render_template('dashboard.html', nombre=session.get('nombre'), miembros=miembros)
 
 @app.route('/registro', methods=['GET', 'POST'])
 def registro():
@@ -44,7 +50,7 @@ def registro():
 
         if contraseña != confirmarcontra:
             flash("Las contraseñas no coinciden", "danger")
-            return render_template("registro.html")
+            return render_template("registro.html", nombre=nombre, email=email)
 
         pass_encriptada = generate_password_hash(contraseña)
         usuario_id = gestor.crear_usuario(nombre, email, pass_encriptada)
@@ -62,7 +68,6 @@ def login():
     if request.method == 'POST':
         email = request.form.get('email')
         contraseña = request.form.get('contraseña')
-        
         usuario = gestor.validar_credenciales(email, contraseña)
 
         if usuario:
@@ -72,7 +77,7 @@ def login():
             flash(f"¡Bienvenido de nuevo, {usuario['nombre']}!", "success")
             return redirect(url_for('dashboard'))
         else:
-            flash("Correo o contraseña incorrectos. Verifica tus datos o regístrate.", "danger")
+            flash("Correo o contraseña incorrectos.", "danger")
                 
     return render_template('login.html')
 
@@ -80,7 +85,7 @@ def login():
 def recuperar_password():
     if request.method == 'POST':
         email = request.form.get('email')
-        usuario = gestor.usuarios.find_one({"email": email}) 
+        usuario = gestor.usuarios_app.find_one({"email": email}) 
         
         if not usuario:
             flash("El correo electrónico no se encuentra registrado.", "danger")
@@ -88,13 +93,9 @@ def recuperar_password():
         
         token = serializer.dumps(email, salt='recuperar-password')
         enlace_recuperacion = url_for('restablecer_token', token=token, _external=True)
-        
         remitente = os.getenv("MAIL_USERNAME") or app.config['MAIL_DEFAULT_SENDER']
         
-        msg = Message("Restablecer tu Contraseña - Gimnasio", 
-                    sender=remitente,
-                    recipients=[email])
-        
+        msg = Message("Restablecer tu Contraseña - Gimnasio", sender=remitente, recipients=[email])
         msg.body = f"Hola {usuario['nombre']}, haz clic aquí para cambiar tu clave: {enlace_recuperacion}"
         
         try:
@@ -120,7 +121,7 @@ def restablecer_token(token):
 
         if nueva_pass != confirmar_pass:
             flash("Las contraseñas no coinciden.", "danger")
-            return render_template('nueva_password.html')
+            return render_template('nueva_password.html', token=token)
         
         pass_encriptada = generate_password_hash(nueva_pass)
         
@@ -130,13 +131,11 @@ def restablecer_token(token):
         else:
             flash("Error al actualizar la contraseña.", "danger")
             
-    return render_template('nueva_password.html')
+    return render_template('nueva_password.html', token=token)
 
 @app.route('/editar_usuario', methods=['GET', 'POST'])
+@login_required
 def editar_usuario():
-    if 'usuario_id' not in session:
-        return redirect(url_for('login'))
-
     usuario_id = session['usuario_id']
     if request.method == 'POST':
         datos_nuevos = {
@@ -155,24 +154,9 @@ def editar_usuario():
     usuario = gestor.obtener_usuario(usuario_id)
     return render_template('editar.html', usuario=usuario)
 
-@app.route('/logout')
-def logout():
-    session.clear() 
-    flash("Has cerrado sesión correctamente", "info")
-    return redirect(url_for('login'))
-
-@app.route('/perfil')
-def perfil():
-    if 'usuario_id' not in session:
-        return redirect(url_for('login'))
-    usuario = gestor.obtener_usuario(session['usuario_id'])
-    return render_template('perfil.html', usuario=usuario)
-
 @app.route('/comprar_membresia', methods=['POST'])
+@login_required
 def comprar_membresia():
-    if 'usuario_id' not in session:
-        return redirect(url_for('login'))
-
     nombre = request.form.get('nombre_cliente')
     telefono = request.form.get('telefono')
     disciplina = request.form.get('plan_disciplina') 
@@ -186,10 +170,8 @@ def comprar_membresia():
     return redirect(url_for('dashboard'))
 
 @app.route('/agregar_pago/<telefono>', methods=['POST'])
+@login_required
 def agregar_pago(telefono):
-    if 'usuario_id' not in session:
-        return redirect(url_for('login'))
-        
     monto = request.form.get('monto')
     concepto = request.form.get('concepto')
     
@@ -200,21 +182,17 @@ def agregar_pago(telefono):
     return redirect(url_for('dashboard'))
 
 @app.route('/eliminar_membresia/<telefono>')
+@login_required
 def borrar_miembro(telefono):
-    if 'usuario_id' not in session:
-        return redirect(url_for('login'))
-
     if gestor.eliminar_membresia(telefono):
-        flash("Membresía actualizada/eliminada correctamente.", "success")
+        flash("Membresía eliminada correctamente.", "success")
     else:
         flash("No se pudo eliminar la membresía.", "danger")
     return redirect(url_for('dashboard'))
 
 @app.route('/cambiar_estado/<telefono>/<estado>')
+@login_required
 def cambiar_estado(telefono, estado):
-    if 'usuario_id' not in session:
-        return redirect(url_for('login'))
-
     if gestor.cambiar_estado_membresia(telefono, estado):
         flash(f"Membresía cambiada a {estado} con éxito.", "info")
     else:
@@ -222,23 +200,35 @@ def cambiar_estado(telefono, estado):
     return redirect(url_for('dashboard'))
 
 @app.route('/editar_membresia/<telefono_actual>', methods=['POST'])
+@login_required
 def editar_membresia_ruta(telefono_actual):
-    if 'usuario_id' not in session:
-        return redirect(url_for('login'))
-
     datos_actualizados = {
         "nombre": request.form.get("nombre"),
         "telefono": request.form.get("telefono"),
         "disciplina": request.form.get("disciplina"),
-        "membresia_actual": request.form.get("membresia_actual"),
-        "pago_realizado": float(request.form.get("pago_realizado") or 0)
+        "membresia_actual": request.form.get("membresia_actual")
     }
+    pago_str = request.form.get("pago_realizado")
+    if pago_str and float(pago_str) > 0:
+        datos_actualizados["pago_realizado"] = float(pago_str)
 
     if gestor.modificar_membresia(telefono_actual, datos_actualizados):
         flash("Membresía modificada correctamente.", "success")
     else:
         flash("No se realizaron cambios o hubo un inconveniente.", "danger")
     return redirect(url_for('dashboard'))
+
+@app.route('/perfil')
+@login_required
+def perfil():
+    usuario = gestor.obtener_usuario(session['usuario_id'])
+    return render_template('perfil.html', usuario=usuario)
+
+@app.route('/logout')
+def logout():
+    session.clear() 
+    flash("Has cerrado sesión correctamente", "info")
+    return redirect(url_for('login'))
 
 if __name__ == '__main__':
     app.run(debug=True)
