@@ -24,7 +24,6 @@ mail = Mail(app)
 serializer = URLSafeTimedSerializer(app.secret_key)
 gestor = GestorGimnasio()
 
-# Decorador para proteger rutas
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -37,8 +36,17 @@ def login_required(f):
 @app.route('/')
 @login_required
 def dashboard():
-    miembros = gestor.obtener_todos_los_miembros()
-    return render_template('dashboard.html', nombre=session.get('nombre'), miembros=miembros)
+    todos_los_miembros = gestor.obtener_todos_los_miembros()
+    
+    miembros_activos = [m for m in todos_los_miembros if m.get('estado') == 'Activo']
+    miembros_inactivos = [m for m in todos_los_miembros if m.get('estado') != 'Activo']
+    
+    return render_template(
+        'dashboard.html', 
+        nombre=session.get('nombre'), 
+        miembros_activos=miembros_activos, 
+        miembros_inactivos=miembros_inactivos
+    )
 
 @app.route('/registro', methods=['GET', 'POST'])
 def registro():
@@ -185,7 +193,7 @@ def agregar_pago(telefono):
 @login_required
 def borrar_miembro(telefono):
     if gestor.eliminar_membresia(telefono):
-        flash("Membresía eliminada correctamente.", "success")
+        flash("Membresía registrada eliminada correctamente.", "success")
     else:
         flash("No se pudo eliminar la membresía.", "danger")
     return redirect(url_for('dashboard'))

@@ -158,7 +158,20 @@ class GestorGimnasio:
             return False
 
     def obtener_todos_los_miembros(self):
-        return list(self.membresias.find())
+        try:
+            fecha_actual_str = datetime.now().strftime("%Y-%m-%d")
+            
+            self.membresias.update_many(
+                {
+                    "fecha_vencimiento": {"$lt": fecha_actual_str},
+                    "estado": "Activo"
+                },
+                {"$set": {"estado": "Inactivo"}}
+            )
+            return list(self.membresias.find())
+        except Exception as e:
+            print(f"❌ Error al obtener y actualizar estados de miembros: {e}")
+            return list(self.membresias.find())
 
     def eliminar_membresia(self, telefono):
         try:
@@ -185,7 +198,6 @@ class GestorGimnasio:
             if nuevos_datos.get("telefono"): datos_membresia["telefono_cliente"] = nuevos_datos["telefono"]
             if nuevos_datos.get("disciplina"): datos_membresia["disciplina"] = nuevos_datos["disciplina"]
             
-            # Solo actualiza el pago si viene explícitamente en los nuevos datos y es válido
             if "pago_realizado" in nuevos_datos: 
                 datos_membresia["pago_realizado"] = nuevos_datos["pago_realizado"]
 
