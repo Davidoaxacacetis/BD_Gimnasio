@@ -60,7 +60,18 @@ def dashboard():
         
         miembros_procesados.append(miembro)
     
-    miembros_activos = [m for m in miembros_procesados if m.get('estado') == 'Activo']
+    miembros_activos = [
+        m for m in miembros_procesados
+        if m.get('estado') == 'Activo'
+    ]
+
+    mes_seleccionado = request.args.get('mes')
+
+    if mes_seleccionado:
+        miembros_activos = [
+            m for m in miembros_activos
+            if m.get('fecha_vencimiento', '').split('-')[1] == mes_seleccionado
+        ]
     miembros_inactivos = [m for m in miembros_procesados if m.get('estado') != 'Activo']
     
     return render_template(

@@ -53,6 +53,31 @@
         </form>
     </div>
 
+<form method="GET" action="{{ url_for('dashboard') }}" class="row mb-3">
+    <div class="col-md-4">
+        <label class="form-label fw-bold">
+            Filtrar por mes de vencimiento
+        </label>
+
+        <select name="mes" class="form-select" onchange="this.form.submit()">
+            <option value="">Todos los meses</option>
+
+            <option value="01" {% if mes_seleccionado=="01" %}selected{% endif %}>Enero</option>
+            <option value="02" {% if mes_seleccionado=="02" %}selected{% endif %}>Febrero</option>
+            <option value="03" {% if mes_seleccionado=="03" %}selected{% endif %}>Marzo</option>
+            <option value="04" {% if mes_seleccionado=="04" %}selected{% endif %}>Abril</option>
+            <option value="05" {% if mes_seleccionado=="05" %}selected{% endif %}>Mayo</option>
+            <option value="06" {% if mes_seleccionado=="06" %}selected{% endif %}>Junio</option>
+            <option value="07" {% if mes_seleccionado=="07" %}selected{% endif %}>Julio</option>
+            <option value="08" {% if mes_seleccionado=="08" %}selected{% endif %}>Agosto</option>
+            <option value="09" {% if mes_seleccionado=="09" %}selected{% endif %}>Septiembre</option>
+            <option value="10" {% if mes_seleccionado=="10" %}selected{% endif %}>Octubre</option>
+            <option value="11" {% if mes_seleccionado=="11" %}selected{% endif %}>Noviembre</option>
+            <option value="12" {% if mes_seleccionado=="12" %}selected{% endif %}>Diciembre</option>
+        </select>
+    </div>
+</form>
+
     <div class="card shadow-sm border-0 p-4">
         <div
             class="d-flex flex-column flex-md-row justify-content-between align-items-md-center border-bottom pb-3 mb-3 gap-2">
