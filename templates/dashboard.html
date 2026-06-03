@@ -59,8 +59,8 @@
             Filtrar por mes de vencimiento
         </label>
 
-        <select name="mes" class="form-select" onchange="this.form.submit()">
-            <option value="">Todos los meses</option>
+<select name="mes" class="form-select" onchange="this.form.submit()">
+    <option value="" {% if not mes_seleccionado %}selected{% endif %}>Todos los meses</option>
 
             <option value="01" {% if mes_seleccionado=="01" %}selected{% endif %}>Enero</option>
             <option value="02" {% if mes_seleccionado=="02" %}selected{% endif %}>Febrero</option>
@@ -351,6 +351,56 @@
                 {% endif %}
             </div>
 
+<div class="card shadow-sm border-0 p-4 mt-4">
+
+    <h5 class="fw-bold">
+        Entrenadores Registrados
+    </h5>
+
+    <div class="table-responsive">
+
+        <table class="table table-hover">
+
+            <thead class="table-light">
+                <tr>
+                    <th>Nombre</th>
+                    <th>Especialidad</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for entrenador in entrenadores %}
+
+                <tr>
+
+                    <td>
+                        {{ entrenador.nombre }}
+                    </td>
+
+                    <td>
+                        {{ entrenador.especialidad }}
+                    </td>
+
+                    <td>
+                        <span class="badge bg-success">
+                            Activo
+                        </span>
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
             <div class="tab-pane fade" id="panel-inactivos" role="tabpanel" aria-labelledby="inactivos-tab">
                 {% if miembros_inactivos %}
                 <div class="table-responsive">
@@ -489,4 +539,5 @@
         </div>
     </div>
 </div>
+
 {% endblock %}
