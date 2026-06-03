@@ -89,7 +89,8 @@ class GestorGimnasio:
 
     # --- GESTIÓN DE MEMBRESÍAS DE CLIENTES ---
 
-    def registrar_membresia_cliente(self, nombre, telefono, disciplina, tipo_membresia, pago):
+    def registrar_membresia_cliente(self, nombre, telefono, disciplinas, tipo_membresia, pago):
+        lista_disciplinas = [disciplinas] if isinstance(disciplinas, str) else disciplinas
         try:
             fecha_inicio = datetime.now()
             dias_duracion = 365 if "anual" in tipo_membresia.lower() else 30
@@ -104,7 +105,7 @@ class GestorGimnasio:
             datos_membresia = {
                 "nombre_cliente": nombre,
                 "telefono_cliente": telefono,
-                "disciplina": disciplina, 
+                "disciplinas": lista_disciplinas, 
                 "tipo": tipo_membresia,
                 "pago_realizado": float(pago),
                 "historial_pagos": [primer_pago],
@@ -121,6 +122,26 @@ class GestorGimnasio:
             return True
         except Exception as e:
             print(f"❌ Error al registrar la membresía: {e}")
+            return False
+
+    def actualizar_disciplinas(self, telefono, nueva_disciplina, operacion="add"):
+        """
+        operacion: "add" para agregar, "remove" para quitar una disciplina específica.
+        """
+        try:
+            if operacion == "add":
+                self.membresias.update_one(
+                    {"telefono_cliente": telefono},
+                    {"$addToSet": {"disciplinas": nueva_disciplina}}
+                )
+            elif operacion == "remove":
+                self.membresias.update_one(
+                    {"telefono_cliente": telefono},
+                    {"$pull": {"disciplinas": nueva_disciplina}}
+                )
+            return True
+        except Exception as e:
+            print(f"❌ Error al actualizar disciplinas: {e}")
             return False
 
     def agregar_pago_adicional(self, telefono, monto, concepto):
@@ -196,7 +217,7 @@ class GestorGimnasio:
 
             if nuevos_datos.get("nombre"): datos_membresia["nombre_cliente"] = nuevos_datos["nombre"]
             if nuevos_datos.get("telefono"): datos_membresia["telefono_cliente"] = nuevos_datos["telefono"]
-            if nuevos_datos.get("disciplina"): datos_membresia["disciplina"] = nuevos_datos["disciplina"]
+            if nuevos_datos.get("disciplina"):  datos_membresia["disciplinas"] = nuevos_datos["disciplinas"]
             
             if "pago_realizado" in nuevos_datos: 
                 datos_membresia["pago_realizado"] = nuevos_datos["pago_realizado"]

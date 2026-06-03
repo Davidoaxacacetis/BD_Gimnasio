@@ -33,13 +33,35 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def normalizar_miembros(lista_miembros):
+    for m in lista_miembros:
+        disc = m.get('disciplinas')
+        if not disc:
+            m['disciplinas'] = []
+        elif isinstance(disc, str):
+            m['disciplinas'] = [disc]
+    return lista_miembros
+
 @app.route('/')
 @login_required
 def dashboard():
     todos_los_miembros = gestor.obtener_todos_los_miembros()
     
-    miembros_activos = [m for m in todos_los_miembros if m.get('estado') == 'Activo']
-    miembros_inactivos = [m for m in todos_los_miembros if m.get('estado') != 'Activo']
+    miembros_procesados = []
+    
+    for m in todos_los_miembros:
+        miembro = m.copy()
+        
+        disc = miembro.get('disciplinas')
+        if not disc:
+            miembro['disciplinas'] = []
+        elif isinstance(disc, str):
+            miembro['disciplinas'] = [disc]
+        
+        miembros_procesados.append(miembro)
+    
+    miembros_activos = [m for m in miembros_procesados if m.get('estado') == 'Activo']
+    miembros_inactivos = [m for m in miembros_procesados if m.get('estado') != 'Activo']
     
     return render_template(
         'dashboard.html', 
@@ -167,11 +189,11 @@ def editar_usuario():
 def comprar_membresia():
     nombre = request.form.get('nombre_cliente')
     telefono = request.form.get('telefono')
-    disciplina = request.form.get('plan_disciplina') 
+    disciplinas = request.form.getlist('disciplinas') 
     tipo = request.form.get('tipo_membresia')        
     pago = request.form.get('pago')
 
-    if gestor.registrar_membresia_cliente(nombre, telefono, disciplina, tipo, pago):
+    if gestor.registrar_membresia_cliente(nombre, telefono, disciplinas, tipo, pago):
         flash(f"Membresía de {nombre} registrada exitosamente.", "success")
     else:
         flash("Error al registrar la membresía.", "danger")
@@ -213,7 +235,7 @@ def editar_membresia_ruta(telefono_actual):
     datos_actualizados = {
         "nombre": request.form.get("nombre"),
         "telefono": request.form.get("telefono"),
-        "disciplina": request.form.get("disciplina"),
+        "disciplinas": request.form.getlist("disciplinas"), 
         "membresia_actual": request.form.get("membresia_actual")
     }
     pago_str = request.form.get("pago_realizado")
@@ -225,6 +247,25 @@ def editar_membresia_ruta(telefono_actual):
     else:
         flash("No se realizaron cambios o hubo un inconveniente.", "danger")
     return redirect(url_for('dashboard'))
+
+@app.route('/cancelar_membresia/<telefono>', methods=['POST'])
+@login_required
+def cancelar_membresia(telefono):
+
+    motivo = request.form.get("motivo_cancelacion")
+
+    gestor.membresias.update_one(
+        {"telefono_cliente": telefono},
+        {
+            "$set": {
+                "estado": "Inactivo",
+                "motivo_cancelacion": motivo
+            }
+        }
+    )
+
+    flash("Membresía cancelada correctamente", "warning")
+    return redirect(url_for("dashboard"))
 
 @app.route('/perfil')
 @login_required
