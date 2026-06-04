@@ -46,14 +46,16 @@ def normalizar_miembros(lista_miembros):
 @app.route('/')
 @login_required
 def dashboard():
-    todos_los_miembros = gestor.obtener_todos_los_miembros()
+
+    todos_los_miembros = gestor.obtener_miembros_con_entrenador()
     mes_seleccionado = request.args.get('mes')
-    
+
     miembros_activos = []
     miembros_inactivos = []
 
     for m in todos_los_miembros:
         miembro = m.copy()
+
         disc = miembro.get('disciplinas')
         if not disc:
             miembro['disciplinas'] = []
@@ -70,7 +72,9 @@ def dashboard():
                 miembros_activos.append(miembro)
         else:
             miembros_inactivos.append(miembro)
-    
+
+    entrenadores = gestor.obtener_todos_los_entrenadores()
+
     return render_template(
         'dashboard.html',
         nombre=session.get('nombre'),
@@ -200,11 +204,15 @@ def agregar_entrenador():
 
     nombre = request.form.get("nombre")
     especialidad = request.form.get("especialidad")
+    telefono = request.form.get("telefono")
+    cobro = request.form.get("cobro")
 
     entrenador_id = gestor.agregar_entrenador(
         nombre,
-        especialidad
-    )
+        especialidad,
+        telefono,
+        cobro
+        )   
 
     if entrenador_id:
         flash("Entrenador registrado correctamente", "success")
@@ -212,6 +220,51 @@ def agregar_entrenador():
         flash("Error al registrar entrenador", "danger")
 
     return redirect(url_for('dashboard'))
+
+@app.route('/cancelar_entrenador/<entrenador_id>', methods=['POST'])
+@login_required
+def cancelar_entrenador(entrenador_id):
+
+    motivo = request.form.get("motivo")
+
+    gestor.cancelar_entrenador(
+        entrenador_id,
+        motivo
+    )
+
+    flash("Entrenador cancelado correctamente", "warning")
+
+    return redirect(url_for('dashboard'))
+
+
+@app.route('/reactivar_entrenador/<entrenador_id>')
+@login_required
+def reactivar_entrenador(entrenador_id):
+
+    if gestor.reactivar_entrenador(entrenador_id):
+        flash("Entrenador reactivado correctamente", "success")
+    else:
+        flash("Error al reactivar entrenador", "danger")
+
+    return redirect(url_for('dashboard'))
+
+@app.route('/editar_entrenador/<entrenador_id>', methods=['POST'])
+@login_required
+def editar_entrenador(entrenador_id):
+
+    datos = {
+        "nombre": request.form.get("nombre"),
+        "especialidad": request.form.get("especialidad"),
+        "telefono": request.form.get("telefono"),
+        "cobro": float(request.form.get("cobro"))
+    }
+
+    if gestor.editar_entrenador(entrenador_id, datos):
+        flash("Entrenador actualizado", "success")
+    else:
+        flash("Error al actualizar entrenador", "danger")
+
+    return redirect(url_for("dashboard"))
 
 @app.route('/comprar_membresia', methods=['POST'])
 @login_required
@@ -262,13 +315,19 @@ def cambiar_estado(telefono, estado):
 @app.route('/editar_membresia/<telefono_actual>', methods=['POST'])
 @login_required
 def editar_membresia_ruta(telefono_actual):
+
+    entrenador_id = request.form.get("entrenador_id")
+
     datos_actualizados = {
-        "nombre": request.form.get("nombre"),
-        "telefono": request.form.get("telefono"),
-        "disciplinas": request.form.getlist("disciplinas"), 
-        "membresia_actual": request.form.get("membresia_actual")
-    }
+    "nombre": request.form.get("nombre"),
+    "telefono": request.form.get("telefono"),
+    "disciplinas": request.form.getlist("disciplinas"),
+    "membresia_actual": request.form.get("membresia_actual"),
+    "entrenador_id": request.form.get("entrenador_id")
+}
+
     pago_str = request.form.get("pago_realizado")
+
     if pago_str and float(pago_str) > 0:
         datos_actualizados["pago_realizado"] = float(pago_str)
 
@@ -276,6 +335,7 @@ def editar_membresia_ruta(telefono_actual):
         flash("Membresía modificada correctamente.", "success")
     else:
         flash("No se realizaron cambios o hubo un inconveniente.", "danger")
+
     return redirect(url_for('dashboard'))
 
 @app.route('/cancelar_membresia/<telefono>', methods=['POST'])
