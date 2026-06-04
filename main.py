@@ -89,21 +89,77 @@ class GestorGimnasio:
 
     # --- GESTIÓN DE MEMBRESÍAS DE CLIENTES ---
 
-    def agregar_entrenador(self, nombre, especialidad):
+    def agregar_entrenador(self, nombre, especialidad, telefono, cobro):
         try:
             return self.entrenadores.insert_one({
                 "nombre": nombre,
                 "especialidad": especialidad,
+                "telefono": telefono,
+                "cobro": float(cobro),
                 "activo": True
             }).inserted_id
+
         except Exception as e:
             print(f"❌ Error al agregar entrenador: {e}")
             return None
 
     def obtener_todos_los_entrenadores(self):
-        return list(self.entrenadores.find({"activo": True}))
+        return list(self.entrenadores.find())
 
+    def obtener_entrenador(self, entrenador_id):
+        try:
+            return self.entrenadores.find_one({
+                "_id": ObjectId(entrenador_id)
+            })
+        except Exception:
+            return None
 
+    def cancelar_entrenador(self, entrenador_id, motivo):
+        try:
+            self.entrenadores.update_one(
+                {"_id": ObjectId(entrenador_id)},
+                {
+                    "$set": {
+                        "activo": False,
+                        "motivo_cancelacion": motivo
+                    }
+                }
+            )
+        
+            return True
+
+        except Exception as e:
+            print(f"❌ Error al cancelar entrenador: {e}")
+            return False
+
+    def editar_entrenador(self, entrenador_id, datos):
+        try:
+
+            self.entrenadores.update_one(
+                {"_id": ObjectId(entrenador_id)},
+                {"$set": datos}
+            )
+
+            return True
+
+        except Exception as e:
+            print(f"❌ Error al editar entrenador: {e}")
+            return False
+
+    def asignar_entrenador(self, telefono_cliente, entrenador_id):
+        try:
+            self.membresias.update_one(
+            {"telefono_cliente": telefono_cliente},
+                {
+                    "$set": {
+                        "entrenador_id": ObjectId(entrenador_id)
+                    }
+                }
+            )
+            return True
+        except Exception as e:
+            print(f"❌ Error al asignar entrenador: {e}")
+            return False
 
     def registrar_membresia_cliente(self, nombre, telefono, disciplinas, tipo_membresia, pago, entrenador_id=None):
         lista_disciplinas = [disciplinas] if isinstance(disciplinas, str) else disciplinas
@@ -136,17 +192,37 @@ class GestorGimnasio:
             return False
 
     def obtener_miembros_con_entrenador(self):
+
+        fecha_actual_str = datetime.now().strftime("%Y-%m-%d")
+
+        self.membresias.update_many(
+        {
+            "fecha_vencimiento": {"$lt": fecha_actual_str},
+            "estado": "Activo"
+        },
+        {
+            "$set": {
+                "estado": "Inactivo"
+            }
+        }
+    )
+
         return list(self.membresias.aggregate([
-            {
-                "$lookup": {
-                    "from": "Entrenadores",
-                    "localField": "entrenador_id",
-                    "foreignField": "_id",
-                    "as": "entrenador_info"
-                }
-            },
-            {"$unwind": {"path": "$entrenador_info", "preserveNullAndEmptyArrays": True}}
-        ]))
+        {
+            "$lookup": {
+                "from": "Entrenadores",
+                "localField": "entrenador_id",
+                "foreignField": "_id",
+                "as": "entrenador_info"
+            }
+        },
+        {
+            "$unwind": {
+                "path": "$entrenador_info",
+                "preserveNullAndEmptyArrays": True
+            }
+        }
+    ]))
 
     def actualizar_disciplinas(self, telefono, nueva_disciplina, operacion="add"):
         """
@@ -241,8 +317,17 @@ class GestorGimnasio:
 
             if nuevos_datos.get("nombre"): datos_membresia["nombre_cliente"] = nuevos_datos["nombre"]
             if nuevos_datos.get("telefono"): datos_membresia["telefono_cliente"] = nuevos_datos["telefono"]
-            if nuevos_datos.get("disciplina"):  datos_membresia["disciplinas"] = nuevos_datos["disciplinas"]
-            
+            if nuevos_datos.get("disciplinas"):  datos_membresia["disciplinas"] = nuevos_datos["disciplinas"]
+            if "entrenador_id" in nuevos_datos:
+
+                entrenador_id = nuevos_datos["entrenador_id"]
+
+                datos_membresia["entrenador_id"] = (
+                    ObjectId(entrenador_id)
+                if entrenador_id
+                else None
+                )
+
             if "pago_realizado" in nuevos_datos: 
                 datos_membresia["pago_realizado"] = nuevos_datos["pago_realizado"]
 

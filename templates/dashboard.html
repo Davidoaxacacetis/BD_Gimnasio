@@ -23,6 +23,40 @@
 <div class="container mt-4">
     <div class="card shadow-sm border-0 p-4 mb-4">
         <h4 class="fw-bold"><i class="bi bi-plus-circle me-2"></i>Nueva Membresía</h4>
+        <div class="card shadow-sm  border-0 p-4 mb-4 mt-4">
+
+            <h4 class="fw-bold">
+                <i class="bi bi-person-badge me-2"></i>
+                Registrar Entrenador
+            </h4>
+
+            <form method="POST" action="{{ url_for('agregar_entrenador') }}" class="row g-3">
+
+                <div class="col-md-3">
+                    <input type="text" name="nombre" class="form-control" placeholder="Nombre" required>
+                </div>
+
+                <div class="col-md-3">
+                    <input type="text" name="especialidad" class="form-control" placeholder="Especialidad" required>
+                </div>
+
+                <div class="col-md-2">
+                    <input type="text" name="telefono" class="form-control" placeholder="Teléfono" required>
+                </div>
+
+                <div class="col-md-2">
+                    <input type="number" name="cobro" class="form-control" placeholder="Cobro $" required>
+                </div>
+
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-success w-100">
+                        Registrar
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
         <form method="POST" action="{{ url_for('comprar_membresia') }}" class="row g-3">
             <div class="col-md-2">
                 <input type="text" name="nombre_cliente" class="form-control" placeholder="Nombre del Cliente" required>
@@ -48,35 +82,54 @@
                 <input type="number" name="pago" class="form-control" placeholder="Pago $" required>
             </div>
             <div class="col-md-2">
+
+                <select name="entrenador_id" class="form-select">
+
+                    <option value="">
+                        Sin entrenador
+                    </option>
+
+                    {% for entrenador in entrenadores %}
+
+                    <option value="{{ entrenador._id }}">
+                        {{ entrenador.nombre }}
+                    </option>
+
+                    {% endfor %}
+
+                </select>
+
+            </div>
+            <div class="col-md-2">
                 <button type="submit" class="btn btn-primary w-100">Ok</button>
             </div>
         </form>
     </div>
 
-<form method="GET" action="{{ url_for('dashboard') }}" class="row mb-3">
-    <div class="col-md-4">
-        <label class="form-label fw-bold">
-            Filtrar por mes de vencimiento
-        </label>
+    <form method="GET" action="{{ url_for('dashboard') }}" class="row mb-3">
+        <div class="col-md-4">
+            <label class="form-label fw-bold">
+                Filtrar por mes de vencimiento
+            </label>
 
-<select name="mes" class="form-select" onchange="this.form.submit()">
-    <option value="" {% if not mes_seleccionado %}selected{% endif %}>Todos los meses</option>
+            <select name="mes" class="form-select" onchange="this.form.submit()">
+                <option value="" {% if not mes_seleccionado %}selected{% endif %}>Todos los meses</option>
 
-            <option value="01" {% if mes_seleccionado=="01" %}selected{% endif %}>Enero</option>
-            <option value="02" {% if mes_seleccionado=="02" %}selected{% endif %}>Febrero</option>
-            <option value="03" {% if mes_seleccionado=="03" %}selected{% endif %}>Marzo</option>
-            <option value="04" {% if mes_seleccionado=="04" %}selected{% endif %}>Abril</option>
-            <option value="05" {% if mes_seleccionado=="05" %}selected{% endif %}>Mayo</option>
-            <option value="06" {% if mes_seleccionado=="06" %}selected{% endif %}>Junio</option>
-            <option value="07" {% if mes_seleccionado=="07" %}selected{% endif %}>Julio</option>
-            <option value="08" {% if mes_seleccionado=="08" %}selected{% endif %}>Agosto</option>
-            <option value="09" {% if mes_seleccionado=="09" %}selected{% endif %}>Septiembre</option>
-            <option value="10" {% if mes_seleccionado=="10" %}selected{% endif %}>Octubre</option>
-            <option value="11" {% if mes_seleccionado=="11" %}selected{% endif %}>Noviembre</option>
-            <option value="12" {% if mes_seleccionado=="12" %}selected{% endif %}>Diciembre</option>
-        </select>
-    </div>
-</form>
+                <option value="01" {% if mes_seleccionado=="01" %}selected{% endif %}>Enero</option>
+                <option value="02" {% if mes_seleccionado=="02" %}selected{% endif %}>Febrero</option>
+                <option value="03" {% if mes_seleccionado=="03" %}selected{% endif %}>Marzo</option>
+                <option value="04" {% if mes_seleccionado=="04" %}selected{% endif %}>Abril</option>
+                <option value="05" {% if mes_seleccionado=="05" %}selected{% endif %}>Mayo</option>
+                <option value="06" {% if mes_seleccionado=="06" %}selected{% endif %}>Junio</option>
+                <option value="07" {% if mes_seleccionado=="07" %}selected{% endif %}>Julio</option>
+                <option value="08" {% if mes_seleccionado=="08" %}selected{% endif %}>Agosto</option>
+                <option value="09" {% if mes_seleccionado=="09" %}selected{% endif %}>Septiembre</option>
+                <option value="10" {% if mes_seleccionado=="10" %}selected{% endif %}>Octubre</option>
+                <option value="11" {% if mes_seleccionado=="11" %}selected{% endif %}>Noviembre</option>
+                <option value="12" {% if mes_seleccionado=="12" %}selected{% endif %}>Diciembre</option>
+            </select>
+        </div>
+    </form>
 
     <div class="card shadow-sm border-0 p-4">
         <div
@@ -104,6 +157,203 @@
         </div>
 
         <div class="tab-content" id="membresiasTabContenido">
+                        <div class="card shadow-sm border-0 p-4 mt-4">
+
+                <h5 class="fw-bold">
+                    Entrenadores Registrados
+                </h5>
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover">
+
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Especialidad</th>
+                                <th>Teléfono</th>
+                                <th>Cobro</th>
+                                <th>Estado</th>
+                                <th>Motivo</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            {% for entrenador in entrenadores %}
+
+                            <tr>
+
+                                <td>{{ entrenador.nombre }}</td>
+
+                                <td>{{ entrenador.especialidad }}</td>
+
+                                <td>{{ entrenador.telefono }}</td>
+
+                                <td>${{ entrenador.cobro }}</td>
+
+                                <td>
+
+                                    {% if entrenador.activo %}
+
+                                    <span class="badge bg-success">
+                                        Activo
+                                    </span>
+
+                                    {% else %}
+
+                                    <span class="badge bg-danger">
+                                        Inactivo
+                                    </span>
+
+                                    {% endif %}
+
+                                </td>
+                                <td>
+
+                                    {% if entrenador.motivo_cancelacion %}
+
+                                    {{ entrenador.motivo_cancelacion }}
+
+                                    {% else %}
+
+                                    -
+
+                                    {% endif %}
+
+                                </td>
+                                <td>
+
+                                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal"
+                                        data-bs-target="#editarEntrenador{{ loop.index }}">
+                                        Editar
+                                    </button>
+
+                                    {% if entrenador.activo %}
+
+                                    <button class="btn btn-sm btn-danger" data-bs-toggle="modal"
+                                        data-bs-target="#cancelarEntrenador{{ loop.index }}">
+                                        Cancelar
+                                    </button>
+
+                                    {% else %}
+
+                                    <span class="badge bg-secondary">
+                                        Ya cancelado
+                                    </span>
+
+                                    {% endif %}
+
+                                </td>
+
+                            </tr>
+                            <div class="modal fade" id="editarEntrenador{{ loop.index }}" tabindex="-1">
+
+                                <div class="modal-dialog">
+
+                                    <div class="modal-content">
+
+                                        <form method="POST"
+                                            action="{{ url_for('editar_entrenador', entrenador_id=entrenador._id) }}">
+
+                                            <div class="modal-header">
+                                                <h5>Editar Entrenador</h5>
+                                            </div>
+
+                                            <div class="modal-body">
+
+                                                <input type="text" name="nombre" class="form-control mb-2"
+                                                    value="{{ entrenador.nombre }}" required>
+
+                                                <input type="text" name="especialidad" class="form-control mb-2"
+                                                    value="{{ entrenador.especialidad }}" required>
+
+                                                <input type="text" name="telefono" class="form-control mb-2"
+                                                    value="{{ entrenador.telefono }}" required>
+
+                                                <input type="number" name="cobro" class="form-control"
+                                                    value="{{ entrenador.cobro }}" required>
+
+                                            </div>
+
+                                            <div class="modal-footer">
+
+                                                <button type="submit" class="btn btn-primary">
+                                                    Guardar
+                                                </button>
+
+                                            </div>
+
+                                        </form>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+                            <div class="modal fade" id="cancelarEntrenador{{ loop.index }}" tabindex="-1">
+
+                                <div class="modal-dialog">
+
+                                    <div class="modal-content">
+
+                                        <form method="POST"
+                                            action="{{ url_for('cancelar_entrenador', entrenador_id=entrenador._id) }}">
+
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">
+                                                    Cancelar Entrenador
+                                                </h5>
+
+                                                <button type="button" class="btn-close"
+                                                    data-bs-dismiss="modal"></button>
+                                            </div>
+
+                                            <div class="modal-body">
+
+                                                <p>
+                                                    Entrenador:
+                                                    <strong>{{ entrenador.nombre }}</strong>
+                                                </p>
+
+                                                <label class="form-label">
+                                                    Motivo
+                                                </label>
+
+                                                <textarea name="motivo" class="form-control" rows="4"
+                                                    required></textarea>
+
+                                            </div>
+
+                                            <div class="modal-footer">
+
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                    Cerrar
+                                                </button>
+
+                                                <button type="submit" class="btn btn-danger">
+                                                    Confirmar
+                                                </button>
+
+                                            </div>
+
+                                        </form>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
             <div class="tab-pane fade show active" id="panel-activos" role="tabpanel" aria-labelledby="activos-tab">
                 {% if miembros_activos %}
                 <div class="table-responsive">
@@ -113,6 +363,7 @@
                                 <th>Nombre</th>
                                 <th>Teléfono</th>
                                 <th>Disciplinas</th>
+                                <th>Entrenador</th>
                                 <th>Duración</th>
                                 <th>Monto Total</th>
                                 <th>Fecha Inicio</th>
@@ -134,6 +385,21 @@
                                     {% else %}
                                     <span class="text-muted small">Sin disciplina</span>
                                     {% endif %}
+                                </td>
+                                <td>
+
+                                    {% if miembro.entrenador_info %}
+
+                                    {{ miembro.entrenador_info.nombre }}
+
+                                    {% else %}
+
+                                    <span class="text-muted">
+                                        Sin asignar
+                                    </span>
+
+                                    {% endif %}
+
                                 </td>
                                 <td><span class="badge bg-info text-dark">{{ miembro.tipo }}</span></td>
                                 <td>
@@ -285,6 +551,33 @@
                                                         class="form-control" value="{{ miembro.pago_realizado }}"
                                                         required>
                                                 </div>
+                                                <div class="col-12">
+
+                                                    <label class="form-label small fw-bold">
+                                                        Entrenador
+                                                    </label>
+
+                                                    <select name="entrenador_id" class="form-select">
+
+                                                        <option value="">
+                                                            Sin entrenador
+                                                        </option>
+
+                                                        {% for entrenador in entrenadores %}
+
+                                                        <option value="{{ entrenador._id }}" {% if miembro.entrenador_id
+                                                            and miembro.entrenador_id|string==entrenador._id|string %}
+                                                            selected {% endif %}>
+
+                                                            {{ entrenador.nombre }}
+
+                                                        </option>
+
+                                                        {% endfor %}
+
+                                                    </select>
+
+                                                </div>
                                             </div>
                                             <div class="modal-footer">
                                                 <button type="button" class="btn btn-secondary"
@@ -351,55 +644,6 @@
                 {% endif %}
             </div>
 
-<div class="card shadow-sm border-0 p-4 mt-4">
-
-    <h5 class="fw-bold">
-        Entrenadores Registrados
-    </h5>
-
-    <div class="table-responsive">
-
-        <table class="table table-hover">
-
-            <thead class="table-light">
-                <tr>
-                    <th>Nombre</th>
-                    <th>Especialidad</th>
-                    <th>Estado</th>
-                </tr>
-            </thead>
-
-            <tbody>
-
-                {% for entrenador in entrenadores %}
-
-                <tr>
-
-                    <td>
-                        {{ entrenador.nombre }}
-                    </td>
-
-                    <td>
-                        {{ entrenador.especialidad }}
-                    </td>
-
-                    <td>
-                        <span class="badge bg-success">
-                            Activo
-                        </span>
-                    </td>
-
-                </tr>
-
-                {% endfor %}
-
-            </tbody>
-
-        </table>
-
-    </div>
-
-</div>
 
             <div class="tab-pane fade" id="panel-inactivos" role="tabpanel" aria-labelledby="inactivos-tab">
                 {% if miembros_inactivos %}
@@ -424,7 +668,21 @@
                             <tr>
                                 <td>{{ miembro.nombre_cliente }}</td>
                                 <td>{{ miembro.telefono_cliente }}</td>
-                                <td><span class="badge bg-primary">{{ miembro.disciplina }}</span></td>
+                                <td>
+
+                                    {% if miembro.disciplinas %}
+
+                                    {% for disc in miembro.disciplinas %}
+
+                                    <span class="badge bg-primary">
+                                        {{ disc }}
+                                    </span>
+
+                                    {% endfor %}
+
+                                    {% endif %}
+
+                                </td>
                                 <td><span class="badge bg-info text-dark">{{ miembro.tipo }}</span></td>
                                 <td>${{ miembro.pago_realizado }}</td>
                                 <td>{{ miembro.fecha_inicio }}</td>
@@ -490,15 +748,31 @@
                                                         value="{{ miembro.telefono_cliente }}" required>
                                                 </div>
                                                 <div class="col-md-6">
-                                                    <label class="form-label small fw-bold">Disciplina</label>
-                                                    <select name="disciplina" class="form-select" required>
-                                                        <option value="Pesas" {% if miembro.disciplina=="Pesas"
-                                                            %}selected{% endif %}>Pesas</option>
-                                                        <option value="Crossfit" {% if miembro.disciplina=="Crossfit"
-                                                            %}selected{% endif %}>Crossfit</option>
-                                                        <option value="Boxeo" {% if miembro.disciplina=="Boxeo"
-                                                            %}selected{% endif %}>Boxeo</option>
+
+                                                    <label class="form-label small fw-bold">
+                                                        Disciplinas
+                                                    </label>
+
+                                                    <select name="disciplinas" class="form-select" multiple size="3"
+                                                        required>
+
+                                                        <option value="Pesas" {% if 'Pesas' in miembro.disciplinas %}
+                                                            selected {% endif %}>
+                                                            Pesas
+                                                        </option>
+
+                                                        <option value="Crossfit" {% if 'Crossfit' in miembro.disciplinas
+                                                            %} selected {% endif %}>
+                                                            Crossfit
+                                                        </option>
+
+                                                        <option value="Boxeo" {% if 'Boxeo' in miembro.disciplinas %}
+                                                            selected {% endif %}>
+                                                            Boxeo
+                                                        </option>
+
                                                     </select>
+
                                                 </div>
                                                 <div class="col-md-6">
                                                     <label class="form-label small fw-bold">Duración</label>
@@ -536,6 +810,7 @@
                 </div>
                 {% endif %}
             </div>
+            
         </div>
     </div>
 </div>
