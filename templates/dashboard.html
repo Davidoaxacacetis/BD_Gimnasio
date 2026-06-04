@@ -1,10 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
 <style>
-<<<<<<< HEAD
-    .btn-interactive { transition: all 0.2s ease-in-out; }
-    .btn-interactive:hover { transform: scale(1.05); }
-=======
     .btn-interactive {
         transition: all 0.2s ease-in-out;
     }
@@ -22,74 +18,37 @@
         background-color: #dc3545 !important;
         color: white !important;
     }
->>>>>>> 7a2fe98f7686dcd5e35cc6a2be55d267319060f4
 </style>
 
 <div class="container mt-4">
-    <div class="card shadow-sm border-0 p-4 mb-4 bg-light">
-        <h5 class="fw-bold"><i class="bi bi-person-plus me-2"></i>Registrar Entrenador</h5>
-        <form method="POST" action="{{ url_for('agregar_entrenador') }}" class="row g-2">
-            <div class="col-md-4">
-                <input type="text" name="nombre" class="form-control" placeholder="Nombre del nuevo entrenador" required>
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-success w-100">Guardar</button>
-            </div>
-        </form>
-    </div>
-
     <div class="card shadow-sm border-0 p-4 mb-4">
         <h4 class="fw-bold"><i class="bi bi-plus-circle me-2"></i>Nueva Membresía</h4>
         <form method="POST" action="{{ url_for('comprar_membresia') }}" class="row g-3">
             <div class="col-md-2">
-                <input type="text" name="nombre_cliente" class="form-control" placeholder="Nombre" required>
+                <input type="text" name="nombre_cliente" class="form-control" placeholder="Nombre del Cliente" required>
             </div>
             <div class="col-md-2">
                 <input type="text" name="telefono" class="form-control" placeholder="Teléfono" required>
             </div>
-<<<<<<< HEAD
-<div class="col-md-4">
-    <label class="small fw-bold">Disciplinas:</label><br>
-
-    <input type="checkbox" name="servicios" value="Pesas" id="s1">
-    <label for="s1">Pesas</label>
-
-    <input type="checkbox" name="servicios" value="Crossfit" id="s2">
-    <label for="s2">Crossfit</label>
-
-    <input type="checkbox" name="servicios" value="Boxeo" id="s3">
-    <label for="s3">Boxeo</label>
-
-    <input type="checkbox" name="servicios" value="Kick Boxing" id="s4">
-    <label for="s4">Kick Boxing</label>
-
-    <input type="checkbox" name="servicios" value="Yoga" id="s5">
-    <label for="s5">Yoga</label>
-
-    <input type="checkbox" name="servicios" value="Spinning" id="s6">
-    <label for="s6">Spinning</label>
-
-    <input type="checkbox" name="servicios" value="Calistenia" id="s7">
-    <label for="s7">Calistenia</label>
-</div>
-            <div class="col-md-3">
-                <select class="form-select" name="entrenador_id">
-                    <option value="">Seleccionar Entrenador...</option>
-                    {% for entrenador in entrenadores %}
-                        <option value="{{ entrenador._id }}">{{ entrenador.nombre }}</option>
-                    {% endfor %}
-=======
             <div class="col-md-2">
                 <label class="small fw-bold">Disciplinas (Ctrl + Click para varias)</label>
                 <select name="disciplinas" class="form-select" multiple size="3" required>
                     <option value="Pesas">Pesas</option>
                     <option value="Crossfit">Crossfit</option>
                     <option value="Boxeo">Boxeo</option>
->>>>>>> 7a2fe98f7686dcd5e35cc6a2be55d267319060f4
                 </select>
             </div>
             <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">Registrar</button>
+                <select name="tipo_membresia" class="form-select" required>
+                    <option value="Mensual">Mensual (1 Mes)</option>
+                    <option value="Anual">Anual (1 Año)</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <input type="number" name="pago" class="form-control" placeholder="Pago $" required>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Ok</button>
             </div>
         </form>
     </div>
@@ -120,35 +79,6 @@
 </form>
 
     <div class="card shadow-sm border-0 p-4">
-<<<<<<< HEAD
-        <h5 class="fw-bold">Control de Miembros</h5>
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead>
-                    <tr>
-                        <th>Nombre</th>
-                        <th>Servicios</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for miembro in miembros_activos %}
-                    <tr>
-                        <td>{{ miembro.nombre_cliente }}</td>
-                        <td>{{ miembro.servicios|join(', ') }}</td>
-                        <td><span class="badge bg-success">Activo</span></td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-secondary" 
-                                    onclick="cancelarConMotivo('{{ miembro.telefono_cliente }}')">
-                                Cancelar
-                            </button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-=======
         <div
             class="d-flex flex-column flex-md-row justify-content-between align-items-md-center border-bottom pb-3 mb-3 gap-2">
             <h5 class="fw-bold m-0"><i class="bi bi-person-lines-fill me-2"></i>Control de Miembros</h5>
@@ -606,22 +536,8 @@
                 </div>
                 {% endif %}
             </div>
->>>>>>> 7a2fe98f7686dcd5e35cc6a2be55d267319060f4
         </div>
     </div>
 </div>
 
-<<<<<<< HEAD
-<script>
-function cancelarConMotivo(telefono) {
-    let motivo = prompt("¿Cuál es el motivo de la cancelación?");
-    if (motivo !== null && motivo.trim() !== "") {
-        window.location.href = `/cambiar_estado?telefono=${telefono}&estado=Inactivo&motivo=${encodeURIComponent(motivo)}`;
-    } else if (motivo === "") {
-        alert("Debes ingresar un motivo.");
-    }
-}
-</script>
-=======
->>>>>>> 7a2fe98f7686dcd5e35cc6a2be55d267319060f4
 {% endblock %}

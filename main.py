@@ -24,8 +24,8 @@ class GestorGimnasio:
             
             self.usuarios_app = self.db['usuarios_sistema'] 
             self.membresias = self.db['Membresias']
-            self.trabajadores = self.db['Trabajadores'] 
-            self.promociones = self.db['Promociones'] 
+            self.trabajadores = self.db['Trabajadores']
+            self.entrenadores = self.db['Entrenadores']
             self.productos = self.db['Productos']
             
             self._crear_indices()
@@ -87,50 +87,8 @@ class GestorGimnasio:
         except Exception:
             return False
 
+    # --- GESTIÓN DE MEMBRESÍAS DE CLIENTES ---
 
-<<<<<<< HEAD
-    def registrar_trabajador(self, nombre, email, rol, telefono=""):
-        try:
-            return self.trabajadores.insert_one({
-                "nombre": nombre,
-                "email": email,
-                "telefono": telefono,
-                "rol": rol, 
-                "fecha_ingreso": datetime.now()
-            }).inserted_id
-        except Exception as e:
-            print(f"❌ Error al registrar trabajador: {e}")
-            return None
-
-    def obtener_entrenadores(self):
-        try:
-            return list(self.trabajadores.find({"rol": "entrenador"}))
-        except Exception:
-            return []
-
-    def crear_promocion(self, titulo, descripcion, descuento):
-        try:
-            return self.promociones.insert_one({
-                "titulo": titulo,
-                "descripcion": descripcion,
-                "descuento_porcentaje": int(descuento),
-                "activa": True,
-                "fecha_creacion": datetime.now()
-            }).inserted_id
-        except Exception as e:
-            print(f"❌ Error al crear promoción: {e}")
-            return None
-
-    def obtener_promociones(self):
-        try:
-            return list(self.promociones.find({"activa": True}))
-        except Exception:
-            return []
-
-
-
-    def registrar_membresia_cliente(self, nombre, telefono, servicios, tipo_membresia, pago, entrenador_id=None):
-=======
     def agregar_entrenador(self, nombre, especialidad):
         try:
             return self.entrenadores.insert_one({
@@ -149,7 +107,6 @@ class GestorGimnasio:
 
     def registrar_membresia_cliente(self, nombre, telefono, disciplinas, tipo_membresia, pago, entrenador_id=None):
         lista_disciplinas = [disciplinas] if isinstance(disciplinas, str) else disciplinas
->>>>>>> 7a2fe98f7686dcd5e35cc6a2be55d267319060f4
         try:
             fecha_inicio = datetime.now()
             dias_duracion = 365 if "anual" in tipo_membresia.lower() else 30
@@ -158,22 +115,14 @@ class GestorGimnasio:
             datos_membresia = {
                 "nombre_cliente": nombre,
                 "telefono_cliente": telefono,
-<<<<<<< HEAD
-                "servicios": servicios, 
-=======
                 "disciplinas": lista_disciplinas, 
->>>>>>> 7a2fe98f7686dcd5e35cc6a2be55d267319060f4
                 "tipo": tipo_membresia,
                 "pago_realizado": float(pago),
                 "historial_pagos": [{"monto": float(pago), "fecha": fecha_inicio.strftime("%Y-%m-%d %H:%M:%S"), "concepto": "Inscripción"}],
                 "fecha_inicio": fecha_inicio.strftime("%Y-%m-%d"),
                 "fecha_vencimiento": fecha_fin.strftime("%Y-%m-%d"),
                 "estado": "Activo",
-<<<<<<< HEAD
-                "entrenador_asignado": ObjectId(entrenador_id) if entrenador_id else None
-=======
                 "entrenador_id": ObjectId(entrenador_id) if entrenador_id else None # <--- NUEVO
->>>>>>> 7a2fe98f7686dcd5e35cc6a2be55d267319060f4
             }
 
             self.membresias.update_one(
@@ -269,23 +218,6 @@ class GestorGimnasio:
             print(f"❌ Error al obtener y actualizar estados de miembros: {e}")
             return list(self.membresias.find())
 
-    def cancelar_membresia_motivo(self, telefono, motivo):
-        try:
-            res = self.membresias.update_one(
-                {"telefono_cliente": telefono},
-                {
-                    "$set": {
-                        "estado": "Cancelada",
-                        "motivo_cancelacion": motivo,
-                        "fecha_cancelacion": datetime.now().strftime("%Y-%m-%d")
-                    }
-                }
-            )
-            return res.modified_count > 0
-        except Exception as e:
-            print(f"❌ Error al cancelar membresía: {e}")
-            return False
-
     def eliminar_membresia(self, telefono):
         try:
             res = self.membresias.delete_one({"telefono_cliente": telefono})
@@ -309,12 +241,7 @@ class GestorGimnasio:
 
             if nuevos_datos.get("nombre"): datos_membresia["nombre_cliente"] = nuevos_datos["nombre"]
             if nuevos_datos.get("telefono"): datos_membresia["telefono_cliente"] = nuevos_datos["telefono"]
-<<<<<<< HEAD
-            if nuevos_datos.get("servicios"): datos_membresia["servicios"] = nuevos_datos["servicios"] # Actualizar lista
-            if nuevos_datos.get("entrenador_asignado"): datos_membresia["entrenador_asignado"] = ObjectId(nuevos_datos["entrenador_asignado"])
-=======
             if nuevos_datos.get("disciplina"):  datos_membresia["disciplinas"] = nuevos_datos["disciplinas"]
->>>>>>> 7a2fe98f7686dcd5e35cc6a2be55d267319060f4
             
             if "pago_realizado" in nuevos_datos: 
                 datos_membresia["pago_realizado"] = nuevos_datos["pago_realizado"]
@@ -326,19 +253,9 @@ class GestorGimnasio:
             print(f"❌ Error al modificar membresía: {e}")
             return False
 
-    def registrar_entrenador(self, nombre):
-        entrenador = {
-           "nombre": nombre,
-            "fecha_registro": datetime.now().strftime("%Y-%m-%d")
-        }
-
-        resultado = self.entrenadores.insert_one(entrenador)
-
-        return resultado.inserted_id is not None
-
     def cambiar_estado_membresia(self, telefono, nuevo_estado):
         try:
-            if nuevo_estado not in ["Activo", "Inactivo", "Cancelada"]:
+            if nuevo_estado not in ["Activo", "Inactivo"]:
                 return False
 
             self.membresias.update_one(
