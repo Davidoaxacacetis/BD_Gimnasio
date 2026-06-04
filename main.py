@@ -210,17 +210,37 @@ class GestorGimnasio:
             return False
 
     def obtener_miembros_con_entrenador(self):
+
+        fecha_actual_str = datetime.now().strftime("%Y-%m-%d")
+
+        self.membresias.update_many(
+        {
+            "fecha_vencimiento": {"$lt": fecha_actual_str},
+            "estado": "Activo"
+        },
+        {
+            "$set": {
+                "estado": "Inactivo"
+            }
+        }
+    )
+
         return list(self.membresias.aggregate([
-            {
-                "$lookup": {
-                    "from": "Entrenadores",
-                    "localField": "entrenador_id",
-                    "foreignField": "_id",
-                    "as": "entrenador_info"
-                }
-            },
-            {"$unwind": {"path": "$entrenador_info", "preserveNullAndEmptyArrays": True}}
-        ]))
+        {
+            "$lookup": {
+                "from": "Entrenadores",
+                "localField": "entrenador_id",
+                "foreignField": "_id",
+                "as": "entrenador_info"
+            }
+        },
+        {
+            "$unwind": {
+                "path": "$entrenador_info",
+                "preserveNullAndEmptyArrays": True
+            }
+        }
+    ]))
 
     def actualizar_disciplinas(self, telefono, nueva_disciplina, operacion="add"):
         """
