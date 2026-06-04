@@ -88,6 +88,7 @@ class GestorGimnasio:
             return False
 
 
+<<<<<<< HEAD
     def registrar_trabajador(self, nombre, email, rol, telefono=""):
         try:
             return self.trabajadores.insert_one({
@@ -129,28 +130,50 @@ class GestorGimnasio:
 
 
     def registrar_membresia_cliente(self, nombre, telefono, servicios, tipo_membresia, pago, entrenador_id=None):
+=======
+    def agregar_entrenador(self, nombre, especialidad):
+        try:
+            return self.entrenadores.insert_one({
+                "nombre": nombre,
+                "especialidad": especialidad,
+                "activo": True
+            }).inserted_id
+        except Exception as e:
+            print(f"❌ Error al agregar entrenador: {e}")
+            return None
+
+    def obtener_todos_los_entrenadores(self):
+        return list(self.entrenadores.find({"activo": True}))
+
+
+
+    def registrar_membresia_cliente(self, nombre, telefono, disciplinas, tipo_membresia, pago, entrenador_id=None):
+        lista_disciplinas = [disciplinas] if isinstance(disciplinas, str) else disciplinas
+>>>>>>> 7a2fe98f7686dcd5e35cc6a2be55d267319060f4
         try:
             fecha_inicio = datetime.now()
             dias_duracion = 365 if "anual" in tipo_membresia.lower() else 30
             fecha_fin = fecha_inicio + timedelta(days=dias_duracion)
 
-            primer_pago = {
-                "monto": float(pago),
-                "fecha": fecha_inicio.strftime("%Y-%m-%d %H:%M:%S"),
-                "concepto": f"Inscripción Inicial ({tipo_membresia})"
-            }
-
             datos_membresia = {
                 "nombre_cliente": nombre,
                 "telefono_cliente": telefono,
+<<<<<<< HEAD
                 "servicios": servicios, 
+=======
+                "disciplinas": lista_disciplinas, 
+>>>>>>> 7a2fe98f7686dcd5e35cc6a2be55d267319060f4
                 "tipo": tipo_membresia,
                 "pago_realizado": float(pago),
-                "historial_pagos": [primer_pago],
+                "historial_pagos": [{"monto": float(pago), "fecha": fecha_inicio.strftime("%Y-%m-%d %H:%M:%S"), "concepto": "Inscripción"}],
                 "fecha_inicio": fecha_inicio.strftime("%Y-%m-%d"),
                 "fecha_vencimiento": fecha_fin.strftime("%Y-%m-%d"),
                 "estado": "Activo",
+<<<<<<< HEAD
                 "entrenador_asignado": ObjectId(entrenador_id) if entrenador_id else None
+=======
+                "entrenador_id": ObjectId(entrenador_id) if entrenador_id else None # <--- NUEVO
+>>>>>>> 7a2fe98f7686dcd5e35cc6a2be55d267319060f4
             }
 
             self.membresias.update_one(
@@ -161,6 +184,39 @@ class GestorGimnasio:
             return True
         except Exception as e:
             print(f"❌ Error al registrar la membresía: {e}")
+            return False
+
+    def obtener_miembros_con_entrenador(self):
+        return list(self.membresias.aggregate([
+            {
+                "$lookup": {
+                    "from": "Entrenadores",
+                    "localField": "entrenador_id",
+                    "foreignField": "_id",
+                    "as": "entrenador_info"
+                }
+            },
+            {"$unwind": {"path": "$entrenador_info", "preserveNullAndEmptyArrays": True}}
+        ]))
+
+    def actualizar_disciplinas(self, telefono, nueva_disciplina, operacion="add"):
+        """
+        operacion: "add" para agregar, "remove" para quitar una disciplina específica.
+        """
+        try:
+            if operacion == "add":
+                self.membresias.update_one(
+                    {"telefono_cliente": telefono},
+                    {"$addToSet": {"disciplinas": nueva_disciplina}}
+                )
+            elif operacion == "remove":
+                self.membresias.update_one(
+                    {"telefono_cliente": telefono},
+                    {"$pull": {"disciplinas": nueva_disciplina}}
+                )
+            return True
+        except Exception as e:
+            print(f"❌ Error al actualizar disciplinas: {e}")
             return False
 
     def agregar_pago_adicional(self, telefono, monto, concepto):
@@ -253,8 +309,12 @@ class GestorGimnasio:
 
             if nuevos_datos.get("nombre"): datos_membresia["nombre_cliente"] = nuevos_datos["nombre"]
             if nuevos_datos.get("telefono"): datos_membresia["telefono_cliente"] = nuevos_datos["telefono"]
+<<<<<<< HEAD
             if nuevos_datos.get("servicios"): datos_membresia["servicios"] = nuevos_datos["servicios"] # Actualizar lista
             if nuevos_datos.get("entrenador_asignado"): datos_membresia["entrenador_asignado"] = ObjectId(nuevos_datos["entrenador_asignado"])
+=======
+            if nuevos_datos.get("disciplina"):  datos_membresia["disciplinas"] = nuevos_datos["disciplinas"]
+>>>>>>> 7a2fe98f7686dcd5e35cc6a2be55d267319060f4
             
             if "pago_realizado" in nuevos_datos: 
                 datos_membresia["pago_realizado"] = nuevos_datos["pago_realizado"]

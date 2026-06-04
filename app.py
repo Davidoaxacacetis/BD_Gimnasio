@@ -8,6 +8,7 @@ from werkzeug.security import generate_password_hash
 from dotenv import load_dotenv
 from functools import wraps
 
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -33,15 +34,47 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def normalizar_miembros(lista_miembros):
+    for m in lista_miembros:
+        disc = m.get('disciplinas')
+        if not disc:
+            m['disciplinas'] = []
+        elif isinstance(disc, str):
+            m['disciplinas'] = [disc]
+    return lista_miembros
+
 @app.route('/')
 @login_required
 def dashboard():
     todos_los_miembros = gestor.obtener_todos_los_miembros()
+<<<<<<< HEAD
     entrenadores = gestor.obtener_entrenadores()
     promociones = gestor.obtener_promociones() 
+=======
+    mes_seleccionado = request.args.get('mes')
+>>>>>>> 7a2fe98f7686dcd5e35cc6a2be55d267319060f4
     
-    miembros_activos = [m for m in todos_los_miembros if m.get('estado') == 'Activo']
-    miembros_inactivos = [m for m in todos_los_miembros if m.get('estado') != 'Activo']
+    miembros_activos = []
+    miembros_inactivos = []
+
+    for m in todos_los_miembros:
+        miembro = m.copy()
+        disc = miembro.get('disciplinas')
+        if not disc:
+            miembro['disciplinas'] = []
+        elif isinstance(disc, str):
+            miembro['disciplinas'] = [disc]
+
+        if miembro.get('estado') == 'Activo':
+            if mes_seleccionado:
+                fecha = miembro.get('fecha_vencimiento', '')
+                if fecha and len(fecha.split('-')) > 1:
+                    if fecha.split('-')[1] == mes_seleccionado:
+                        miembros_activos.append(miembro)
+            else:
+                miembros_activos.append(miembro)
+        else:
+            miembros_inactivos.append(miembro)
     
     miembros_cancelados = [m for m in todos_los_miembros if m.get('estado') == 'Cancelada']
 
@@ -54,6 +87,7 @@ def dashboard():
             pass
 
     return render_template(
+<<<<<<< HEAD
         'dashboard.html', 
         nombre=session.get('nombre'), 
         miembros_activos=miembros_activos, 
@@ -61,6 +95,14 @@ def dashboard():
         miembros_cancelados=miembros_cancelados,
         entrenadores=entrenadores,
         promociones=promociones
+=======
+        'dashboard.html',
+        nombre=session.get('nombre'),
+        miembros_activos=miembros_activos,
+        miembros_inactivos=miembros_inactivos,
+        entrenadores=entrenadores,
+        mes_seleccionado=mes_seleccionado
+>>>>>>> 7a2fe98f7686dcd5e35cc6a2be55d267319060f4
     )
 
 @app.route('/registro', methods=['GET', 'POST'])
@@ -177,6 +219,7 @@ def editar_usuario():
     usuario = gestor.obtener_usuario(usuario_id)
     return render_template('editar.html', usuario=usuario)
 
+<<<<<<< HEAD
 
 @app.route('/registrar_trabajador', methods=['POST'])
 @login_required
@@ -206,17 +249,47 @@ def crear_promocion():
     return redirect(url_for('dashboard'))
 
 
+=======
+@app.route('/agregar_entrenador', methods=['POST'])
+@login_required
+def agregar_entrenador():
+
+    nombre = request.form.get("nombre")
+    especialidad = request.form.get("especialidad")
+
+    entrenador_id = gestor.agregar_entrenador(
+        nombre,
+        especialidad
+    )
+
+    if entrenador_id:
+        flash("Entrenador registrado correctamente", "success")
+    else:
+        flash("Error al registrar entrenador", "danger")
+
+    return redirect(url_for('dashboard'))
+
+>>>>>>> 7a2fe98f7686dcd5e35cc6a2be55d267319060f4
 @app.route('/comprar_membresia', methods=['POST'])
 @login_required
 def comprar_membresia():
     nombre = request.form.get('nombre_cliente')
     telefono = request.form.get('telefono')
+<<<<<<< HEAD
     servicios = request.form.getlist('servicios')
     tipo = "Mensual"     
     pago = request.form.get('pago')
     entrenador_id = request.form.get('entrenador_id')
 
     if gestor.registrar_membresia_cliente(nombre, telefono, servicios, tipo, pago, entrenador_id):
+=======
+    disciplinas = request.form.getlist('disciplinas') 
+    tipo = request.form.get('tipo_membresia')          
+    pago = request.form.get('pago')
+    entrenador_id = request.form.get('entrenador_id') 
+
+    if gestor.registrar_membresia_cliente(nombre, telefono, disciplinas, tipo, pago, entrenador_id):
+>>>>>>> 7a2fe98f7686dcd5e35cc6a2be55d267319060f4
         flash(f"Membresía de {nombre} registrada exitosamente.", "success")
     else:
         flash("Error al registrar la membresía.", "danger")
@@ -308,9 +381,14 @@ def editar_membresia_ruta(telefono_actual):
     datos_actualizados = {
         "nombre": request.form.get("nombre"),
         "telefono": request.form.get("telefono"),
+<<<<<<< HEAD
         "servicios": request.form.getlist("servicios"), 
         "membresia_actual": request.form.get("membresia_actual"),
         "entrenador_asignado": request.form.get("entrenador_asignado") 
+=======
+        "disciplinas": request.form.getlist("disciplinas"), 
+        "membresia_actual": request.form.get("membresia_actual")
+>>>>>>> 7a2fe98f7686dcd5e35cc6a2be55d267319060f4
     }
     pago_str = request.form.get("pago_realizado")
     if pago_str and float(pago_str) > 0:
@@ -321,6 +399,25 @@ def editar_membresia_ruta(telefono_actual):
     else:
         flash("No se realizaron cambios o hubo un inconveniente.", "danger")
     return redirect(url_for('dashboard'))
+
+@app.route('/cancelar_membresia/<telefono>', methods=['POST'])
+@login_required
+def cancelar_membresia(telefono):
+
+    motivo = request.form.get("motivo_cancelacion")
+
+    gestor.membresias.update_one(
+        {"telefono_cliente": telefono},
+        {
+            "$set": {
+                "estado": "Inactivo",
+                "motivo_cancelacion": motivo
+            }
+        }
+    )
+
+    flash("Membresía cancelada correctamente", "warning")
+    return redirect(url_for("dashboard"))
 
 @app.route('/perfil')
 @login_required
