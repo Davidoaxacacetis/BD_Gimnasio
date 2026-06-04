@@ -3,7 +3,9 @@
         <tr>
             <th>Nombre</th>
             <th>Teléfono</th>
-            <th>Disciplina</th>
+            <th>Disciplinas</th>
+<th>Entrenador</th>
+<th>Motivo Cancelación</th>
             <th>Duración</th>
             <th>Monto Total</th>
             <th>Fecha Inicio</th>
@@ -17,7 +19,29 @@
         <tr>
             <td>{{ miembro.nombre_cliente }}</td>
             <td>{{ miembro.telefono_cliente }}</td>
-            <td><span class="badge bg-primary">{{ miembro.disciplina }}</span></td>
+            <td>
+    {% for servicio in miembro.servicios %}
+        <span class="badge bg-primary me-1">
+            {{ servicio }}
+        </span>
+    {% endfor %}
+</td>
+
+<td>
+    {% if miembro.entrenador_nombre %}
+        <span class="badge bg-dark">
+            {{ miembro.entrenador_nombre }}
+        </span>
+    {% else %}
+        <span class="text-muted">
+            Sin entrenador
+        </span>
+    {% endif %}
+</td>
+
+<td>
+    {{ miembro.motivo_cancelacion or "-" }}
+</td>
             <td><span class="badge bg-info text-dark">{{ miembro.tipo }}</span></td>
             <td>
                 <div class="dropdown">
@@ -64,8 +88,14 @@
             <td class="text-center">
                 <div class="d-flex justify-content-center gap-2" role="group">
                     {% if miembro.estado == "Activo" %}
-                    <a href="{{ url_for('cambiar_estado', telefono=miembro.telefono_cliente, estado='Inactivo') }}" 
-                       class="btn btn-sm btn-outline-warning btn-interactive align-self-center d-flex align-items-center gap-1" 
+    <button
+    type="button"
+    class="btn btn-sm btn-outline-warning btn-interactive"
+    onclick="cancelarConMotivo('{{ miembro.telefono_cliente }}')">
+
+    <i class="bi bi-x-circle"></i>
+    Cancelar
+</button>                       class="btn btn-sm btn-outline-warning btn-interactive align-self-center d-flex align-items-center gap-1" 
                        data-bs-toggle="tooltip" title="Pausar temporalmente el acceso del cliente al gimnasio">
                          <i class="bi bi-pause-fill fs-6"></i> Pausar
                     </a>
@@ -166,3 +196,34 @@
         {% endfor %}
     </tbody>
 </table>
+
+<script>
+function cancelarConMotivo(telefono){
+
+    let motivo = prompt(
+        "¿Cuál es el motivo de la cancelación?"
+    );
+
+    if(!motivo || motivo.trim() === ""){
+        alert("Debes escribir un motivo.");
+        return;
+    }
+
+    const form = document.createElement("form");
+
+    form.method = "POST";
+    form.action = "/cancelar_membresia_motivo/" + telefono;
+
+    const input = document.createElement("input");
+
+    input.type = "hidden";
+    input.name = "motivo";
+    input.value = motivo;
+
+    form.appendChild(input);
+
+    document.body.appendChild(form);
+
+    form.submit();
+}
+</script>
