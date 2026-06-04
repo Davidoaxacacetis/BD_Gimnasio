@@ -1,28 +1,100 @@
 {% extends "base.html" %}
 {% block content %}
+
 <style>
-    .btn-interactive {
-        transition: all 0.2s ease-in-out;
-    }
 
-    .btn-interactive:hover {
-        transform: scale(1.1);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-    }
+body{
+    background:#f5f7fb;
+}
 
-    .nav-pills .nav-link.active {
-        background-color: #0d6efd;
-    }
+.card{
+    border-radius:15px;
+}
 
-    .nav-pills .nav-link#inactivos-tab.active {
-        background-color: #dc3545 !important;
-        color: white !important;
-    }
+.table{
+    vertical-align: middle;
+}
+
+.btn-interactive{
+    transition:.3s;
+}
+
+.btn-interactive:hover{
+    transform:translateY(-3px);
+}
+
+.nav-pills .nav-link{
+    border-radius:12px;
+}
+
+.nav-pills .nav-link.active{
+    background:#0d6efd;
+}
+
+.nav-pills .nav-link#inactivos-tab.active{
+    background:#dc3545 !important;
+}
+
+.form-control,
+.form-select{
+    border-radius:10px;
+}
+
+.badge{
+    font-size:.85rem;
+}
+
+.card-header-custom{
+    background:linear-gradient(135deg,#0d6efd,#4c8dff);
+    color:white;
+    border-radius:15px 15px 0 0;
+    padding:15px;
+}
+
+.search-box{
+    border-radius:50px;
+}
+
 </style>
 
 <div class="container mt-4">
-    <div class="card shadow-sm border-0 p-4 mb-4">
-        <h4 class="fw-bold"><i class="bi bi-plus-circle me-2"></i>Nueva Membresía</h4>
+    <div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card shadow border-0 bg-primary text-white">
+            <div class="card-body">
+                <h6>Total Activos</h6>
+                <h2>{{ miembros_activos|length }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow border-0 bg-danger text-white">
+            <div class="card-body">
+                <h6>Inactivos</h6>
+                <h2>{{ miembros_inactivos|length }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow border-0 bg-success text-white">
+            <div class="card-body">
+                <h6>Entrenadores</h6>
+                <h2>{{ entrenadores|length }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow border-0 bg-warning text-dark">
+            <div class="card-body">
+                <h6>Membresías Totales</h6>
+                <h2>{{ miembros_activos|length + miembros_inactivos|length }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
         <div class="card shadow-sm  border-0 p-4 mb-4 mt-4">
 
             <h4 class="fw-bold">
@@ -57,6 +129,209 @@
             </form>
 
         </div>
+
+                <div class="tab-content" id="membresiasTabContenido">
+                        <div class="card shadow-sm border-0 p-4 mt-4 mb-5">
+
+                <h5 class="fw-bold">
+                    Entrenadores Registrados
+                </h5>
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover">
+
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Especialidad</th>
+                                <th>Teléfono</th>
+                                <th>Cobro</th>
+                                <th>Estado</th>
+                                <th>Motivo</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            {% for entrenador in entrenadores %}
+
+                            <tr>
+
+                                <td>{{ entrenador.nombre }}</td>
+
+                                <td>{{ entrenador.especialidad }}</td>
+
+                                <td>{{ entrenador.telefono }}</td>
+
+                                <td>${{ entrenador.cobro }}</td>
+
+                                <td>
+
+                                    {% if entrenador.activo %}
+
+                                    <span class="badge bg-success">
+                                        Activo
+                                    </span>
+
+                                    {% else %}
+
+                                    <span class="badge bg-danger">
+                                        Inactivo
+                                    </span>
+
+                                    {% endif %}
+
+                                </td>
+                                <td>
+
+                                    {% if entrenador.motivo_cancelacion %}
+
+                                    {{ entrenador.motivo_cancelacion }}
+
+                                    {% else %}
+
+                                    -
+
+                                    {% endif %}
+
+                                </td>
+                                <td>
+
+                                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal"
+                                        data-bs-target="#editarEntrenador{{ loop.index }}">
+                                        Editar
+                                    </button>
+
+                                    {% if entrenador.activo %}
+
+                                    <button class="btn btn-sm btn-danger" data-bs-toggle="modal"
+                                        data-bs-target="#cancelarEntrenador{{ loop.index }}">
+                                        Cancelar
+                                    </button>
+
+                                    {% else %}
+
+                                    <span class="badge bg-secondary">
+                                        Ya cancelado
+                                    </span>
+
+                                    {% endif %}
+
+                                </td>
+
+                            </tr>
+                            <div class="modal fade" id="editarEntrenador{{ loop.index }}" tabindex="-1">
+
+                                <div class="modal-dialog">
+
+                                    <div class="modal-content">
+
+                                        <form method="POST"
+                                            action="{{ url_for('editar_entrenador', entrenador_id=entrenador._id) }}">
+
+                                            <div class="modal-header">
+                                                <h5>Editar Entrenador</h5>
+                                            </div>
+
+                                            <div class="modal-body">
+
+                                                <input type="text" name="nombre" class="form-control mb-2"
+                                                    value="{{ entrenador.nombre }}" required>
+
+                                                <input type="text" name="especialidad" class="form-control mb-2"
+                                                    value="{{ entrenador.especialidad }}" required>
+
+                                                <input type="text" name="telefono" class="form-control mb-2"
+                                                    value="{{ entrenador.telefono }}" required>
+
+                                                <input type="number" name="cobro" class="form-control"
+                                                    value="{{ entrenador.cobro }}" required>
+
+                                            </div>
+
+                                            <div class="modal-footer">
+
+                                                <button type="submit" class="btn btn-primary">
+                                                    Guardar
+                                                </button>
+
+                                            </div>
+
+                                        </form>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+                            <div class="modal fade" id="cancelarEntrenador{{ loop.index }}" tabindex="-1">
+
+                                <div class="modal-dialog">
+
+                                    <div class="modal-content">
+
+                                        <form method="POST"
+                                            action="{{ url_for('cancelar_entrenador', entrenador_id=entrenador._id) }}">
+
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">
+                                                    Cancelar Entrenador
+                                                </h5>
+
+                                                <button type="button" class="btn-close"
+                                                    data-bs-dismiss="modal"></button>
+                                            </div>
+
+                                            <div class="modal-body">
+
+                                                <p>
+                                                    Entrenador:
+                                                    <strong>{{ entrenador.nombre }}</strong>
+                                                </p>
+
+                                                <label class="form-label">
+                                                    Motivo
+                                                </label>
+
+                                                <textarea name="motivo" class="form-control" rows="4"
+                                                    required></textarea>
+
+                                            </div>
+
+                                            <div class="modal-footer">
+
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                    Cerrar
+                                                </button>
+
+                                                <button type="submit" class="btn btn-danger">
+                                                    Confirmar
+                                                </button>
+
+                                            </div>
+
+                                        </form>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+    
+    <div class="card shadow-sm border-0 p-4 mb-4">
+        <h4 class="fw-bold"><i class="bi bi-plus-circle me-2"></i>Nueva Membresía</h4>
         <form method="POST" action="{{ url_for('comprar_membresia') }}" class="row g-3">
             <div class="col-md-2">
                 <input type="text" name="nombre_cliente" class="form-control" placeholder="Nombre del Cliente" required>
@@ -155,6 +430,20 @@
                 </li>
             </ul>
         </div>
+        <div class="row mb-3">
+
+    <div class="col-md-6">
+
+        <input
+            type="text"
+            id="buscadorMiembros"
+            class="form-control search-box"
+            placeholder="🔍 Buscar cliente..."
+        >
+
+    </div>
+
+</div>
 
         <div class="tab-content" id="membresiasTabContenido">
             <div class="tab-pane fade show active" id="panel-activos" role="tabpanel" aria-labelledby="activos-tab">
@@ -245,7 +534,21 @@
                                     </div>
                                 </td>
                                 <td>{{ miembro.fecha_inicio }}</td>
-                                <td>{{ miembro.fecha_vencimiento }}</td>
+                                <td>
+
+    {% if miembro.proximo_vencer %}
+
+    <span class="badge bg-warning text-dark">
+        {{ miembro.fecha_vencimiento }}
+    </span>
+
+    {% else %}
+
+    {{ miembro.fecha_vencimiento }}
+
+    {% endif %}
+
+</td>
                                 <td><span class="badge bg-success px-3 py-2 rounded-pill">Activo</span></td>
                                 <td class="text-center">
                                     <div class="d-flex justify-content-center gap-2">
@@ -617,5 +920,25 @@
         </div>
     </div>
 </div>
+<script>
 
+document.getElementById("buscadorMiembros")
+.addEventListener("keyup", function(){
+
+    let valor = this.value.toLowerCase();
+
+    let filas = document.querySelectorAll("tbody tr");
+
+    filas.forEach(fila=>{
+
+        fila.style.display =
+            fila.innerText.toLowerCase().includes(valor)
+            ? ""
+            : "none";
+
+    });
+
+});
+
+</script>
 {% endblock %}

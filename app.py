@@ -49,18 +49,50 @@ def dashboard():
 
     todos_los_miembros = gestor.obtener_miembros_con_entrenador()
     mes_seleccionado = request.args.get('mes')
+    
+    hoy = datetime.now()
+
+    total_ingresos = 0
+    proximos_vencer = 0
 
     miembros_activos = []
     miembros_inactivos = []
 
     for m in todos_los_miembros:
         miembro = m.copy()
+        
+        try:
+
+            fecha_vencimiento = datetime.strptime(
+                miembro['fecha_vencimiento'],
+                "%Y-%m-%d"
+            )
+
+            dias_restantes = (
+                fecha_vencimiento - hoy
+            ).days
+
+            miembro['proximo_vencer'] = (
+                dias_restantes <= 7 and dias_restantes >= 0
+            )
+
+            if miembro['proximo_vencer']:
+                proximos_vencer += 1
+
+        except:
+            miembro['proximo_vencer'] = False
 
         disc = miembro.get('disciplinas')
         if not disc:
             miembro['disciplinas'] = []
         elif isinstance(disc, str):
             miembro['disciplinas'] = [disc]
+        try:
+                total_ingresos += float(
+                    miembro.get('pago_realizado', 0)
+            )
+        except:
+            pass
 
         if miembro.get('estado') == 'Activo':
             if mes_seleccionado:
@@ -73,16 +105,25 @@ def dashboard():
         else:
             miembros_inactivos.append(miembro)
 
+    miembros_activos.sort(
+    key=lambda x: x.get(
+        "fecha_vencimiento",
+        "9999-12-31"
+    )
+    )
+
     entrenadores = gestor.obtener_todos_los_entrenadores()
 
     return render_template(
-        'dashboard.html',
-        nombre=session.get('nombre'),
-        miembros_activos=miembros_activos,
-        miembros_inactivos=miembros_inactivos,
-        entrenadores=entrenadores,
-        mes_seleccionado=mes_seleccionado
-    )
+    'dashboard.html',
+    nombre=session.get('nombre'),
+    miembros_activos=miembros_activos,
+    miembros_inactivos=miembros_inactivos,
+    entrenadores=entrenadores,
+    mes_seleccionado=mes_seleccionado,
+    total_ingresos=total_ingresos,
+    proximos_vencer=proximos_vencer
+)
 
 @app.route('/registro', methods=['GET', 'POST'])
 def registro():
